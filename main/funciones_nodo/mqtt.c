@@ -249,7 +249,23 @@ void mensaje_mqtt_estado(void) {
         }
         else{
                 strncat(mensaje, " no_sincronizado", 90);
+
+                struct timeval current_time2;
+                gettimeofday(&current_time2, NULL);
+                char mensaje2[100];
+
+                sprintf(mensaje2, " %lld",(uint64_t) 1000000 * current_time2.tv_sec);
+                strncat(mensaje, mensaje2, 90);
         }
+
+        if(Datos_muestreo.estado_muestreo==ESTADO_ESPERANDO_MENSAJE_DE_INICIO) {
+          strncat(mensaje, " esperando", 90);
+        }
+        else{
+          strncat(mensaje, " muestreando", 90);
+        }
+
+
 
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/estado", mensaje, 0, 1, 0, 1);
         ESP_LOGI(TAG, "Mensaje de estado publicado, msg_id=%d", msg_id);
