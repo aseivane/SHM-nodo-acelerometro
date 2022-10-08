@@ -16,16 +16,23 @@
 //#define IP_BROKER_MQTT "192.168.0.10"   //Direccion del Broker MQTT
 
 
-#define WIFI_SSID "The Dude"        //SSID WIFI (Nombre de red)
-#define WIFI_PASS "zarzaparrilla"   //Contraseña WIFI
-#define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
+#define WIFI_SSID "xxxxxxx"        //SSID WIFI (Nombre de red)
+#define WIFI_PASS "xxxxxxx"        //Contraseña WIFI
+
 #define TICTOC_SERVER "192.168.0.50"   // Ip del servidor de sincronismo
 
 
 // Configuracion del MQTT
+#define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
 #define PUERTO_MQTT 1883                //puerto del MQTT
-#define USUARIO_MQTT "usuario"          //Usuario del MQTT
-#define PASSWD_MQTT  "usuariopassword"  //Contraseña del MQTT
+#define USUARIO_MQTT "usr"          //Usuario del MQTT
+#define PASSWD_MQTT  "usr"  //Contraseña del MQTT
+
+
+// #define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
+// #define PUERTO_MQTT 1883                //puerto del MQTT
+// #define USUARIO_MQTT "usuario"          //Usuario del MQTT
+// #define PASSWD_MQTT  "usuariopassword"  //Contraseña del MQTT
 
 
 #define ARCHIVOS_CON_ENCABEZADO

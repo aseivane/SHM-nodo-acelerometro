@@ -60,6 +60,16 @@ typedef struct mentaje_t {
 } mensaje_t;
 
 
+// Para cargar la configuracion del sistema
+typedef struct nodo_config_t {
+  unsigned char wifi_ssid[32];
+  unsigned char wifi_password[64];
+  char mqtt_ip_broker[16];
+  char ip_tictoc_server[16];
+  char usuario_mqtt[64];
+  char password_mqtt[64];
+  uint32_t puerto_mqtt;
+} nodo_config_t;
 
 // ESTADOS MUESTREO
 #define ESTADO_ESPERANDO_MENSAJE_DE_INICIO  0

@@ -91,15 +91,93 @@ void extraccion_tarjeta_SD(void)
 
 void borrar_datos_SD (void)
 {
-  DIR *d;
-  struct dirent *dir;
-  d = opendir(mount_point);
-  if (d) {
-    while ((dir = readdir(d)) != NULL) {
-    //  printf("%s\n", dir->d_name);
-      f_unlink(dir->d_name);
-    }
-    closedir(d);
-  }
+        DIR *d;
+        struct dirent *dir;
+        d = opendir(mount_point);
+        if (d) {
+                while ((dir = readdir(d)) != NULL) {
+                        //  printf("%s\n", dir->d_name);
 
+                        if(strcmp("CONFIG.TXT", dir->d_name )) {
+                                f_unlink(dir->d_name);
+                        }
+                }
+                closedir(d);
+        }
+
+}
+
+
+
+extern nodo_config_t datos_config;
+
+void leer_config_SD (void)
+{
+        FILE *f_config;
+        char buffer[100];
+        char comando[100];
+        char argumento[100];
+
+
+        if ((f_config = fopen(MOUNT_POINT "/CONFIG.TXT", "r")) == NULL) {
+                ESP_LOGI(TAG, "Error! opening config file");
+                // Program exits if the file pointer returns NULL.
+        }
+
+        else{
+                ESP_LOGI(TAG, "Archivo de configuracion config.txt abierto");
+
+                while (fgets(buffer, sizeof(buffer),f_config)) { // Leo una línea de archivo
+
+                        sscanf(buffer,"%s \" %[^\"]s", comando, argumento); // Separo comando y argumento
+
+                        if(strcmp("wifi_ssid", comando)==0) {
+                                ESP_LOGI(TAG, "wifi_ssid configurado");
+                                memcpy(datos_config.wifi_ssid,argumento, sizeof(argumento));
+//                                strcpy(datos_config.wifi_ssid,argumento);
+                                //printf("Argumento: %s \n", datos_config.wifi_ssid );
+                        }
+
+                        if(strcmp("wifi_password", comando)==0) {
+                                ESP_LOGI(TAG, "Password_wifi configurado");
+                                memcpy(datos_config.wifi_password,argumento, sizeof(argumento));
+
+//                                strcpy(datos_config.wifi_password,argumento);
+                                // printf("Argumento %s \n", datos_config.wifi_password );
+                        }
+
+                        if(strcmp("mqtt_ip_broker", comando)==0) {
+                                ESP_LOGI(TAG, "mqtt_ip_broker configurado");
+                                strcpy(datos_config.mqtt_ip_broker,argumento);
+                                // printf("Argumento %s \n", datos_config.wifi_password );
+                        }
+
+                        if(strcmp("ip_tictoc_server", comando)==0) {
+                                ESP_LOGI(TAG, "ip_tictoc_server configurado");
+                                strcpy(datos_config.ip_tictoc_server,argumento);
+                                // printf("Argumento %s \n", datos_config.wifi_password );
+                        }
+
+                        if(strcmp("usuario_mqtt", comando)==0) {
+                                ESP_LOGI(TAG, "usuario_mqtt configurado");
+                                strcpy(datos_config.usuario_mqtt,argumento);
+                                // printf("Argumento %s \n", datos_config.wifi_password );
+                        }
+
+                        if(strcmp("password_mqtt", comando)==0) {
+                                ESP_LOGI(TAG, "password_mqtt configurado");
+                                strcpy(datos_config.password_mqtt,argumento);
+                                // printf("Argumento %s \n", datos_config.wifi_password );
+                        }
+
+                        if(strcmp("puerto_mqtt", comando)==0) {
+                                ESP_LOGI(TAG, "puerto_mqtt configurado");
+                                datos_config.puerto_mqtt = atoi(argumento);
+                                //printf("Puerto MQTT: %d \n", datos_config.puerto_mqtt );
+                        }
+
+                }
+                fclose(f_config);
+                ESP_LOGI(TAG, "Archivo de configuracion config.txt cerrado");
+        }
 }

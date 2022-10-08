@@ -11,12 +11,6 @@
 #include "../tictoc/daemon.h"
 
 
-const char* mqtt_server = IP_BROKER_MQTT;
-const int mqttPort = PUERTO_MQTT;
-const char* mqttUser = USUARIO_MQTT;
-const char* mqttPassword = PASSWD_MQTT;
-
-
 static const char *TAG = "MQTT ";
 
 
@@ -39,6 +33,8 @@ const char Topic_config_hora[] = "control/config_hora";
 extern bool esperando_inicio;
 extern muestreo_t Datos_muestreo;
 extern TicTocData * ticTocData;
+
+extern nodo_config_t datos_config;
 
 
 extern char id_nodo[20];
@@ -152,8 +148,6 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
 
 }
 
-
-
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
         esp_mqtt_client_handle_t client = event->client;
@@ -214,6 +208,19 @@ esp_mqtt_client_handle_t get_mqtt_client_handle(void)
 
 static void mqtt_app_start(void)
 {
+
+  char mqtt_server[20] = IP_BROKER_MQTT;
+  int mqttPort = PUERTO_MQTT;
+  char mqttUser[100] = USUARIO_MQTT;
+  char mqttPassword[100] = PASSWD_MQTT;
+
+
+  strcpy(mqtt_server, datos_config.mqtt_ip_broker);
+  strcpy(mqttUser, datos_config.usuario_mqtt);
+  strcpy(mqttPassword, datos_config.password_mqtt);
+  mqttPort = datos_config.puerto_mqtt;
+
+
         esp_mqtt_client_config_t mqtt_cfg = {
                 //.uri = CONFIG_BROKER_URL,
                 .host= mqtt_server,
@@ -221,6 +228,8 @@ static void mqtt_app_start(void)
                 .password = mqttPassword,
                 .port = mqttPort,
         };
+
+
 
         ESP_LOGI(TAG, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
 
@@ -349,5 +358,6 @@ void subscripciones(esp_mqtt_client_handle_t client){
 
 
 void inicio_mqtt(void){
+
         mqtt_app_start();
 }

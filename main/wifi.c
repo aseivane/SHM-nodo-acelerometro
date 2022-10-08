@@ -51,6 +51,7 @@ static int s_retry_num = 0;
 
 extern char dir_ip[20];
 wifi_ap_record_t wifidata;
+extern nodo_config_t datos_config;
 
 
 static void event_handler(void* arg, esp_event_base_t event_base,
@@ -132,6 +133,11 @@ void connectToWiFi()
                         },
                 },
         };
+
+// Actualizo las credenciales WIFI almacenadas en la tarjetaSD
+        memcpy(wifi_config.sta.ssid, datos_config.wifi_ssid, sizeof(datos_config.wifi_ssid));
+        memcpy(wifi_config.sta.password, datos_config.wifi_password, sizeof(datos_config.wifi_password));
+
 
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
         ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );

@@ -40,6 +40,8 @@ mensaje_t mensaje_consola;
 muestreo_t Datos_muestreo;
 TicTocData * ticTocData;
 
+nodo_config_t datos_config;
+
 static const char *TAG = "MAIN "; // Para los mensajes del micro
 char id_nodo[20];
 volatile char dir_ip[20];
@@ -87,7 +89,9 @@ void app_main(void)
                 derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
         ESP_LOGI(TAG, "Identificación: %s", id_nodo);
 
-        // Primero que nada me conecto a la red
+// Primero que nada me conecto a la red
+        inicializacion_tarjeta_SD();
+        leer_config_SD ();
         connectToWiFi();
 
 
@@ -114,7 +118,6 @@ void app_main(void)
         inicializacion_gpios();
         ESP_ERROR_CHECK(inicializacion_i2c());
         ESP_LOGI(TAG, "I2C Inicializado correctamente");
-        inicializacion_tarjeta_SD();
         inicio_mqtt();
 
         /* Start the file server */
@@ -127,9 +130,13 @@ void app_main(void)
 
 
 /* ALGORITMO DE SINCRONISMO*/
+
+        char tictocserver[20] = TICTOC_SERVER;
+        strcpy(tictocserver, datos_config.ip_tictoc_server);
+
         TicTocData * ticTocData1 = malloc(sizeof(TicTocData)); /* ALGORITMO DE SINCRONISMO*/
         ticTocData = ticTocData1; /* ALGORITMO DE SINCRONISMO*/
-        setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT); /* ALGORITMO DE SINCRONISMO*/
+        setupTicToc(ticTocData, tictocserver, TICTOC_PORT); /* ALGORITMO DE SINCRONISMO*/
 
 /* ------------------------------------------
    Una pausa al inicio

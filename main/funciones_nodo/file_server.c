@@ -103,25 +103,36 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         sprintf(entrysize, "%ld", entry_stat.st_size);
         ESP_LOGI(TAG, "Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
 
-        /* Send chunk of HTML file containing table entries with file name and size */
-        httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        if (entry->d_type == DT_DIR) {
-            httpd_resp_sendstr_chunk(req, "/");
+
+
+// MUESTRO LOS ARCHIVOS, EXCEPTO EL ARCHIVO DE CONFIGURACION CONFIG.TXT
+        if(strcmp("CONFIG.TXT", entry->d_name )) {
+          /* Send chunk of HTML file containing table entries with file name and size */
+          httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
+          httpd_resp_sendstr_chunk(req, req->uri);
+          httpd_resp_sendstr_chunk(req, entry->d_name);
+          if (entry->d_type == DT_DIR) {
+              httpd_resp_sendstr_chunk(req, "/");
+          }
+          httpd_resp_sendstr_chunk(req, "\">");
+          httpd_resp_sendstr_chunk(req, entry->d_name);
+          httpd_resp_sendstr_chunk(req, "</a></td><td>");
+          httpd_resp_sendstr_chunk(req, entrytype);
+          httpd_resp_sendstr_chunk(req, "</td><td>");
+          httpd_resp_sendstr_chunk(req, entrysize);
+          httpd_resp_sendstr_chunk(req, "</td><td>");
+          httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
+          httpd_resp_sendstr_chunk(req, req->uri);
+          httpd_resp_sendstr_chunk(req, entry->d_name);
+          httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
+          httpd_resp_sendstr_chunk(req, "</td></tr>\n");
         }
-        httpd_resp_sendstr_chunk(req, "\">");
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "</a></td><td>");
-        httpd_resp_sendstr_chunk(req, entrytype);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, entrysize);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
-        httpd_resp_sendstr_chunk(req, "</td></tr>\n");
+
+        else{
+          ESP_LOGI(TAG, "Archivo de configuracion encontrado y ocultado");
+
+        }
+
     }
     closedir(dir);
 
