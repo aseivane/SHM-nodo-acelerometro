@@ -3,6 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := NodoVialidad-actual
+PROJECT_NAME := tic-toc-sic
 
 include $(IDF_PATH)/make/project.mk
+
