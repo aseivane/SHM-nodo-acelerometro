@@ -78,9 +78,10 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 Datos_muestreo.duracion_muestreo = atoi(args_rcv[1])*60 ;
                 Datos_muestreo.nro_muestreo = atoi(args_rcv[2]);
                 Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO_A;
-                Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
-                Datos_muestreo.nro_muestra_en_seg = 0;
-                Datos_muestreo.nro_muestra_total_muestreo = 0;
+              //  Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
+              //  Datos_muestreo.nro_muestra_en_seg = 0;
+              //  Datos_muestreo.nro_muestra_total_muestreo = 0;
+
 
                 ESP_LOGI(TAG, "Tiempo de inicio: %llu ",Datos_muestreo.epoch_inicio);
                 ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
@@ -97,8 +98,6 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                         ESP_LOGI(TAG, "Mensaje de peticion de estado recibido");
                         mensaje_mqtt_estado(); // Al conectarse envía un mensaje de estado
                 }
-
-
 
         }
 
@@ -130,10 +129,8 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
         case MQTT_EVENT_CONNECTED:
                 ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
                 subscripciones(client); // Despues de conectarme me subscribo a los topics
-
-                mensaje_mqtt_estado(); // Al conectarse envía un mensaje de estado
-
                 break;
+
         case MQTT_EVENT_DISCONNECTED:
                 ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
                 break;
@@ -145,16 +142,20 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
         case MQTT_EVENT_UNSUBSCRIBED:
                 ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
                 break;
+
         case MQTT_EVENT_PUBLISHED:
                 ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
                 break;
+
         case MQTT_EVENT_DATA:   // Cuando recibo un mensaje a un topic que estoy subcripto.
                 ESP_LOGI(TAG, "MQTT_EVENT_DATA");
                 analizar_mensaje_mqtt(event->topic,event->topic_len, event->data, event->data_len );
                 break;
+
         case MQTT_EVENT_ERROR:
                 ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
                 break;
+
         default:
                 ESP_LOGI(TAG, "Other event id:%d", event->event_id);
                 break;
@@ -209,17 +210,12 @@ void mensaje_mqtt_estado(void) {
                 int64_t ttTime_irq;
                 ttTime_irq = ticTocTime(ticTocData);
                 char mensaje2[100];
-                sprintf(mensaje2, " sincronizado hora:  %lld",ttTime_irq);
-
+                sprintf(mensaje2, " sincronizado %lld",ttTime_irq);
                 strncat(mensaje, mensaje2, 90);
-
         }
         else{
                 strncat(mensaje, " no_sincronizado", 90);
         }
-
-
-
 
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/estado", mensaje, 0, 1, 0, 1);
         ESP_LOGI(TAG, "Mensaje de estado publicado, msg_id=%d", msg_id);
@@ -246,6 +242,7 @@ void mensaje_confirmacion(bool inicio_fin) {
 void subscripciones(esp_mqtt_client_handle_t client){
 
         char topic_subscribe[MAX_TOPIC_LENGTH] = "";
+
 
         strcat(topic_subscribe, Topic_InicioMuestreo);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);

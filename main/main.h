@@ -94,19 +94,21 @@ typedef struct mentaje_t {
 #define ESTADO_CONFIGURAR_ALARMA_INICIO_B   2
 #define ESTADO_ESPERANDO_INICIO             3
 #define ESTADO_MUESTREANDO                  4
+#define ESTADO_FINALIZANDO_MUESTREO         5
 
 
 typedef struct muestreo_t {
         uint8_t estado_muestreo;
         int64_t epoch_inicio;  // Epoch (UTC) resolucion en segundos
-        uint32_t contador_segundos;  // Contador de la duracion del muestreo
+        uint32_t int_contador_segundos;  // Contador de la duracion del muestreo
         uint32_t nro_muestreo;       // Identificador del muestreo en curso
         uint8_t datos_mpu [CANT_BYTES_LECTURA]; // Lugar donde guardo los datos leidos del mpu
         uint8_t TABLA0[LONG_TABLAS];
         uint8_t TABLA1[LONG_TABLAS];
         uint8_t selec_tabla_escritura;
         uint8_t selec_tabla_lectura;
-        uint8_t nro_tabla;
+        uint8_t nro_tabla_guardada;
+        uint8_t nro_tabla_enviada;
         uint32_t nro_muestra_en_seg;
         uint32_t nro_muestra_total_muestreo;
         uint32_t nro_archivo;
@@ -116,6 +118,8 @@ typedef struct muestreo_t {
         bool flag_tabla_llena;
         bool flag_tabla_perdida;
         uint32_t cant_muestras_perdidas;  // Contador de muestras perdidas en una tabla.
+        uint32_t cantidad_de_interrupciones_de_muestreo;
+        uint32_t cantidad_de_muestras_leidas;
 }muestreo_t;
 
 /*****************************************************************************

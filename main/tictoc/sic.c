@@ -186,15 +186,3 @@ int64_t IRAM_ATTR computePhi(SicData* sic, int64_t systemClock){
 int64_t IRAM_ATTR sicTime(SicData* sic, int64_t systemClock){
 	return systemClock - computePhi(sic, systemClock);
 }
-
-// int sicTimeAvailable(SicData* sic){
-// 	return sic->state > NO_SYNC;
-// }
-//
-// int64_t computePhi(SicData* sic, int64_t systemClock){
-// 	return (int64_t)(systemClock*sic->actual_m + sic->actual_c);
-// }
-//
-// int64_t sicTime(SicData* sic, int64_t systemClock){
-// 	return systemClock - computePhi(sic, systemClock);
-// }

@@ -20,7 +20,7 @@
 #include "GPIO.h"
 #include "esp_attr.h"
 
-#define MOSTRAR_MENSAJES
+//#define MOSTRAR_MENSAJES
 /************************************************************************
 * Variables externas
 ************************************************************************/
@@ -61,7 +61,7 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                         timer_set_alarm_value(TIMER_GROUP_0, 0, (Datos_muestreo.epoch_inicio - ttTime_irq)*40-40000000);         // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
 
         #ifdef MOSTRAR_MENSAJES
-                        sprintf(mensaje_consola.mensaje,"PRE_MUESTREO, Falta 1 segundo, Epoch_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld", Datos_muestreo.epoch_inicio, ttTime_irq,(Datos_muestreo.epoch_inicio - ttTime_irq)*40-40000000 );
+                        sprintf(mensaje_consola.mensaje,"Alarma A configurada, Epoch_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld \n", Datos_muestreo.epoch_inicio, ttTime_irq,(Datos_muestreo.epoch_inicio - ttTime_irq)*40-40000000 );
                         mensaje_consola.mensaje_nuevo=true;
         #endif
                         Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO_B;         // En la proxima interrupcion empiezo a muestrear
@@ -79,7 +79,7 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                         timer_set_alarm_value(TIMER_GROUP_0, 0, (Datos_muestreo.epoch_inicio - ttTime_irq)*40);                 // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
 
                 #ifdef MOSTRAR_MENSAJES
-                        sprintf(mensaje_consola.mensaje,"Epoch_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld", Datos_muestreo.epoch_inicio, ttTime_irq,(Datos_muestreo.epoch_inicio - ttTime_irq)*40 );
+                        sprintf(mensaje_consola.mensaje,"Alarma B configurada, Falta 1 segundo, Epoch_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld \n", Datos_muestreo.epoch_inicio, ttTime_irq,(Datos_muestreo.epoch_inicio - ttTime_irq)*40 );
                         mensaje_consola.mensaje_nuevo=true;
                 #endif
                         Datos_muestreo.estado_muestreo = ESTADO_MUESTREANDO;                 // En la proxima interrupcion empiezo a muestrear
@@ -99,8 +99,7 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                 //         LED=0;
                 //         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
                 // }
-
-                Datos_muestreo.nro_muestra_total_muestreo++;  // Contador de muestras totales en el muestreo.
+                Datos_muestreo.cantidad_de_interrupciones_de_muestreo++;
                 xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
 
                 if (Datos_muestreo.flag_tomar_muestra == true) {         // Si es true es porque no se leyó la muestra anterior.
@@ -108,33 +107,45 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                 }
                 Datos_muestreo.flag_tomar_muestra = true;
 
-                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
+                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer); // Valor de reseteo por defecto del timer. Según frecuencia de muestreo definida
 
-                if (Datos_muestreo.nro_muestra_en_seg == MUESTRAS_POR_SEGUNDO-1) {         // Al finalizar las muestras del segundo vuelvo a sincronizar.
+// RESINCRONIZAMOS AL FINALIZAR EL SEGUNDO
 
-                        Datos_muestreo.contador_segundos++;         // Descuento 1 al contador de segundos
+                if ( ((Datos_muestreo.cantidad_de_interrupciones_de_muestreo-1)-(Datos_muestreo.int_contador_segundos*MUESTRAS_POR_SEGUNDO)) >= (MUESTRAS_POR_SEGUNDO-1)) {           // Al finalizar las muestras del segundo vuelvo a sincronizar.
 
-                        if (Datos_muestreo.contador_segundos >= Datos_muestreo.duracion_muestreo) {         // Si terminé de muestrear
+                        Datos_muestreo.int_contador_segundos++;         // Aumento 1 al contador de segundos
+
+                        if (Datos_muestreo.int_contador_segundos >= Datos_muestreo.duracion_muestreo) {         // Si terminé de muestrear
                                 //resetea_muestreo();
-                                Datos_muestreo.estado_muestreo = ESTADO_ESPERANDO_MENSAJE_DE_INICIO;         // Vuelvo al estado de espera de instrucciones
-                                Datos_muestreo.nro_muestra_total_muestreo = 0;  // Contador de muestras totales en el muestreo.
+                                Datos_muestreo.estado_muestreo = ESTADO_FINALIZANDO_MUESTREO;         // Vuelvo al estado de espera de instrucciones
 
-        #ifdef MOSTRAR_MENSAJES
-                                sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d \n", Datos_muestreo.nro_muestreo );
+                                #ifdef MOSTRAR_MENSAJES
+                                sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d | Interrupciones: %d | Muestras leidas: %d \n", Datos_muestreo.nro_muestreo, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas );
                                 mensaje_consola.mensaje_nuevo=true;
-        #endif
+                                #endif
                         }
 
                         else if(ticTocReady(ticTocData)) { // Sincronizo para el próximo segundo de muestreo
                                 int64_t ttTime_irq;
                                 ttTime_irq = ticTocTime(ticTocData);
-                                timer_set_alarm_value(TIMER_GROUP_0, 0, (Datos_muestreo.epoch_inicio + Datos_muestreo.contador_segundos*1000000L - ttTime_irq)*40);         // Setea la alarma para que la proxima interrupcion sea en el inicio.
+                                timer_set_alarm_value(TIMER_GROUP_0, 0, (Datos_muestreo.epoch_inicio + Datos_muestreo.int_contador_segundos*1000000L - ttTime_irq)*40);         // Setea la alarma para que la proxima interrupcion sea en el inicio.
         #ifdef MOSTRAR_MENSAJES
-                                sprintf(mensaje_consola.mensaje,"Epoch_inicio: %lld   Inicio_prox_seg:%lld  Cantidad de ciclos: %lld \n", Datos_muestreo.epoch_inicio, (Datos_muestreo.epoch_inicio + Datos_muestreo.contador_segundos*1000000L - ttTime_irq), (Datos_muestreo.epoch_inicio + Datos_muestreo.contador_segundos*1000000L - ttTime_irq)*40);
+                                sprintf(mensaje_consola.mensaje,"Epoch_inicio: %lld   Inicio_prox_seg:%lld  Cantidad de ciclos: %lld \n", Datos_muestreo.epoch_inicio, (Datos_muestreo.epoch_inicio + Datos_muestreo.int_contador_segundos*1000000L - ttTime_irq), (Datos_muestreo.epoch_inicio + Datos_muestreo.int_contador_segundos*1000000L - ttTime_irq)*40);
                                 mensaje_consola.mensaje_nuevo=true;
         #endif
                         }
                 }
+                break;
+
+        case ESTADO_FINALIZANDO_MUESTREO:
+
+
+                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer); // Valor de reseteo por defecto del timer. Según frecuencia de muestreo definida
+
+                Datos_muestreo.nro_muestra_total_muestreo = 0;         // Contador de muestras totales en el muestreo.
+                //xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken ); // Una última muestra para cerrar el archivo.
+                Datos_muestreo.estado_muestreo = ESTADO_ESPERANDO_MENSAJE_DE_INICIO;         // Vuelvo al estado de espera de instrucciones
+
                 break;
 
         default:
@@ -190,10 +201,3 @@ void inicializacion_timer_muestreo(int timer_idx, bool auto_reload, uint64_t val
 
         timer_start(TIMER_GROUP_0, timer_idx);
 }
-
-// Funciones para iniciar y frenar el timer
-/*
-   timer_pause(TIMER_GROUP_0, TIMER_0);
-
-   timer_start(TIMER_GROUP_0, TIMER_0);
- */

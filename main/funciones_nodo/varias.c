@@ -36,11 +36,15 @@ void resetea_muestreo(void){
         Datos_muestreo.flag_tomar_muestra = false;
         Datos_muestreo.flag_muestra_perdida = false;
         Datos_muestreo.nro_archivo=0;
-        Datos_muestreo.nro_tabla=0;
-        Datos_muestreo.contador_segundos=0;
+        Datos_muestreo.nro_tabla_guardada=0;
+        Datos_muestreo.nro_tabla_enviada=0;
+        Datos_muestreo.int_contador_segundos=0;
         Datos_muestreo.nro_muestreo=0;
         Datos_muestreo.duracion_muestreo=0;
         Datos_muestreo.cant_muestras_perdidas=0;
+        Datos_muestreo.cantidad_de_interrupciones_de_muestreo=0;
+        Datos_muestreo.cantidad_de_muestras_leidas=0;
+
 
 // Cerramos el archivo si está abierto (hay que comprobar que no esté en uso)
         if( xSemaphore_mutex_archivo != NULL ) { //Chequea que el semáforo esté inicializado
