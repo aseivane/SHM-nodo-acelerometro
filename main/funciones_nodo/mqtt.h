@@ -39,7 +39,7 @@
 
 #include "esp_log.h"
 #include "mqtt_client.h"
-
+#include "varias.h"
 
 void inicio_mqtt(void);
 void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int mensaje_size);

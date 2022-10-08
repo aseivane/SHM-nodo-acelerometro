@@ -30,9 +30,9 @@ const char Topic_InicioMuestreo[] = "control/inicio_muestreo";
 const char Topic_Cancelacion_Muestreo[] = "control/cancelacion_muestreo";
 const char Topic_Peticion_estado[] = "control/estado";
 const char Topic_reiniciar[] = "control/reiniciar";
-const char Topic_formatear[] = "control/formatear";
+const char Topic_borrarSD[] = "control/borrarSD";
 
-extern int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
+//extern int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
 extern bool esperando_inicio;
 extern muestreo_t Datos_muestreo;
 extern TicTocData * ticTocData;
@@ -71,13 +71,17 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
         // ESP_LOGI(TAG,"MENSAJE= %.*s ", mensaje_size, mensaje);
 
         if(strcmp(Topic_InicioMuestreo, topic_rcv)==0) {
+                resetea_muestreo(); // Reseteamos un muestreo en curso
                 ESP_LOGI(TAG, "Mensaje de inicio de muestreo recibido");
                 Datos_muestreo.epoch_inicio = atoll(args_rcv[0]);
                 Datos_muestreo.epoch_inicio = Datos_muestreo.epoch_inicio * 1000000; // Lo paso a microsegundos
-                Datos_muestreo.duracion_muestreo = atoi(args_rcv[1]);
+                Datos_muestreo.duracion_muestreo = atoi(args_rcv[1])*60 ;
                 Datos_muestreo.nro_muestreo = atoi(args_rcv[2]);
-                Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO;
+                Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO_A;
                 Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
+                Datos_muestreo.nro_muestra_en_seg = 0;
+                Datos_muestreo.nro_muestra_total_muestreo = 0;
+
                 ESP_LOGI(TAG, "Tiempo de inicio: %llu ",Datos_muestreo.epoch_inicio);
                 ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
                 ESP_LOGI(TAG, "Numero de muestreo : %d ",Datos_muestreo.nro_muestreo);
@@ -85,11 +89,17 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
 
         else if(strcmp(Topic_Cancelacion_Muestreo, topic_rcv)==0) {
                 ESP_LOGI(TAG, "Mensaje de cancelación de muestreo recibido");
+                resetea_muestreo();
         }
 
         else if(strcmp(Topic_Peticion_estado, topic_rcv)==0) {
-                ESP_LOGI(TAG, "Mensaje de peticion de estado recibido");
-                mensaje_mqtt_estado(); // Al conectarse envía un mensaje de estado
+                if(strcmp("0", args_rcv[0])==0 || strcmp(id_nodo, args_rcv[0])==0 ) {
+                        ESP_LOGI(TAG, "Mensaje de peticion de estado recibido");
+                        mensaje_mqtt_estado(); // Al conectarse envía un mensaje de estado
+                }
+
+
+
         }
 
         else if(strcmp(Topic_reiniciar, topic_rcv)==0) {
@@ -99,15 +109,10 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 }
         }
 
-        else if(strcmp(Topic_formatear, topic_rcv)==0) {
+        else if(strcmp(Topic_borrarSD, topic_rcv)==0) {
                 if(strcmp("0", args_rcv[0])==0 || strcmp(id_nodo, args_rcv[0])==0 ) {
-                        ESP_LOGI(TAG, "Mensaje de formateo recibido");
-                        ESP_LOGE(TAG, "FALTA EL PROCESO DE FORMATEO");
-                    //    extraccion_tarjeta_SD();
-
+                        ESP_LOGI(TAG, "Mensaje de borrado recibido");
                         borrar_datos_SD();
-
-                    //    inicializacion_tarjeta_SD();
                 }
         }
 }
@@ -266,7 +271,7 @@ void subscripciones(esp_mqtt_client_handle_t client){
         strcpy(topic_subscribe, ""); // Limpio el string
 
 
-        strcat(topic_subscribe, Topic_formatear);
+        strcat(topic_subscribe, Topic_borrarSD);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);
         ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string

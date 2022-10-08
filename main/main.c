@@ -56,14 +56,12 @@ FILE *f_samples = NULL;
 
 SemaphoreHandle_t xSemaphore_tomamuestra = NULL;
 SemaphoreHandle_t xSemaphore_guardatabla = NULL;
+SemaphoreHandle_t xSemaphore_mutex_archivo = NULL;
 
 uint8_t LED;
 
 mensaje_t mensaje_consola;
 muestreo_t Datos_muestreo;
-
-int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
-
 
 TicTocData * ticTocData;
 
@@ -119,7 +117,7 @@ void app_main(void)
 // Inicialización de Variables /////////
         Datos_muestreo.selec_tabla_escritura = 0;
         Datos_muestreo.selec_tabla_lectura = 0;
-        Datos_muestreo.nro_muestra = 0;
+        Datos_muestreo.nro_muestra_en_seg = 0;
         Datos_muestreo.flag_tabla_llena = false;
         Datos_muestreo.flag_tomar_muestra = false;
         Datos_muestreo.flag_muestra_perdida = false;
@@ -133,10 +131,11 @@ void app_main(void)
 // Creo los semaforos que voy a usar////////////////////////////////////////////
         xSemaphore_tomamuestra = xSemaphoreCreateBinary();
         xSemaphore_guardatabla = xSemaphoreCreateBinary();
+        xSemaphore_mutex_archivo = xSemaphoreCreateMutex();
 
 
 
-        if( xSemaphore_tomamuestra != NULL &&  xSemaphore_guardatabla != NULL)
+        if( xSemaphore_tomamuestra != NULL &&  xSemaphore_guardatabla != NULL &&  xSemaphore_mutex_archivo != NULL)
         {
                 ESP_LOGI(TAG, "SEMAFOROS CREADOS CORECTAMENTE");
         }

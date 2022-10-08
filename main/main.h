@@ -25,7 +25,7 @@
 
 #define MUESTRA_DATOS_SINCRONIZACION
 //#define MUESTRA_ESTADISTICAS_CPU
-//#define ARCHIVOS_CON_ENCABEZADO
+#define ARCHIVOS_CON_ENCABEZADO
 
 //#define SD_40MHZ  // Para mas velocidad en la tarjeta SD (default es 20MHz), a 20MHz es mas estable.
 
@@ -89,10 +89,11 @@ typedef struct mentaje_t {
 
 
 // ESTADOS MUESTREO
-#define ESTADO_ESPERANDO_MENSAJE_DE_INICIO 0
-#define ESTADO_CONFIGURAR_ALARMA_INICIO    1
-#define ESTADO_ESPERANDO_INICIO            2
-#define ESTADO_MUESTREANDO                 3
+#define ESTADO_ESPERANDO_MENSAJE_DE_INICIO  0
+#define ESTADO_CONFIGURAR_ALARMA_INICIO_A   1
+#define ESTADO_CONFIGURAR_ALARMA_INICIO_B   2
+#define ESTADO_ESPERANDO_INICIO             3
+#define ESTADO_MUESTREANDO                  4
 
 
 typedef struct muestreo_t {
@@ -106,9 +107,9 @@ typedef struct muestreo_t {
         uint8_t selec_tabla_escritura;
         uint8_t selec_tabla_lectura;
         uint8_t nro_tabla;
-        uint32_t nro_muestra;
+        uint32_t nro_muestra_en_seg;
+        uint32_t nro_muestra_total_muestreo;
         uint32_t nro_archivo;
-        uint64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
         uint32_t duracion_muestreo;
         bool flag_tomar_muestra;
         bool flag_muestra_perdida;
