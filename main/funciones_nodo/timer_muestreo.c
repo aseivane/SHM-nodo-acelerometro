@@ -20,7 +20,6 @@
 #include "GPIO.h"
 #include "esp_attr.h"
 
-#define AJUSTE_DE_HORA
 /************************************************************************
 * Variables externas
 ************************************************************************/
@@ -52,18 +51,6 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 
         case ESTADO_ESPERANDO_MENSAJE_DE_INICIO:    // Si estoy esperando el mensaje de inicio
                 timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
-
-#ifdef AJUSTE_DE_HORA
-                if(ticTocReady(ticTocData)) {
-                        int64_t ttTime_irq;
-                        ttTime_irq = ticTocTime(ticTocData);
-                        struct timeval current_time1;
-                        current_time1.tv_sec = ttTime_irq/1000000;
-                        current_time1.tv_usec = 0;
-                        settimeofday(&current_time1, NULL);
-                }
-#endif
-
 
                 break;
 
@@ -132,10 +119,10 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                                 //resetea_muestreo();
                                 Datos_muestreo.estado_muestreo = ESTADO_FINALIZANDO_MUESTREO;         // Vuelvo al estado de espera de instrucciones
 
-                                #ifdef MOSTRAR_MENSAJES
+        #ifdef MOSTRAR_MENSAJES
                                 sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d | Interrupciones: %d | Muestras leidas: %d \n", Datos_muestreo.nro_muestreo, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas );
                                 mensaje_consola.mensaje_nuevo=true;
-                                #endif
+        #endif
                         }
 
                         else if(ticTocReady(ticTocData)) { // Sincronizo para el próximo segundo de muestreo
@@ -152,6 +139,7 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 
         case ESTADO_FINALIZANDO_MUESTREO:
 
+                Datos_muestreo.flag_fin_muestreo = true; // Para mandar el mensaje de confirmacion por mqtt
 
                 timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer); // Valor de reseteo por defecto del timer. Según frecuencia de muestreo definida
 
@@ -182,11 +170,11 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                                 //resetea_muestreo();
                                 Datos_muestreo.estado_muestreo = ESTADO_FINALIZANDO_MUESTREO;                 // Vuelvo al estado de espera de instrucciones
 
-                                        #ifdef MOSTRAR_MENSAJES
+
+          #ifdef MOSTRAR_MENSAJES
                                 sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d | Interrupciones: %d | Muestras leidas: %d \n", Datos_muestreo.nro_muestreo, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas );
                                 mensaje_consola.mensaje_nuevo=true;
-                                Datos_muestreo.flag_fin_muestreo = true;
-                                        #endif
+          #endif
                         }
 
                         else if(ticTocReady(ticTocData)) {         // Sincronizo para el próximo segundo de muestreo
@@ -196,11 +184,33 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                 }
                 break;
 
-
         default:
                 timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
                 break;
+
+
+
+
         }
+
+
+
+// Si está sincronizado prendemos el LED verde y ponemos en hora el reloj local
+        if(ticTocReady(ticTocData)) {
+                gpio_set_level(LED_2, 1);
+                // int64_t ttTime_irq;
+                // ttTime_irq = ticTocTime(ticTocData);
+                // struct timeval current_time1;
+                // current_time1.tv_sec = ttTime_irq/1000000;
+                // current_time1.tv_usec = 0;
+                // settimeofday(&current_time1, NULL);
+        }
+        else{
+                gpio_set_level(LED_2, 0);
+        }
+
+
+
 
         timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
         timer_group_enable_alarm_in_isr(TIMER_GROUP_0, TIMER_0);

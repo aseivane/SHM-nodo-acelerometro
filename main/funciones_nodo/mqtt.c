@@ -35,7 +35,6 @@ const char Topic_borrarSD[] = "control/borrarSD";
 const char Topic_config_hora[] = "control/config_hora";
 
 
-
 //extern int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
 extern bool esperando_inicio;
 extern muestreo_t Datos_muestreo;
@@ -151,14 +150,7 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 }
         }
 
-
-
-
-
-
 }
-
-
 
 
 

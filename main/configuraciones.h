@@ -37,4 +37,10 @@
 
 
 
+
+// Amount of algorithm cycles between estimation parameters computation.
+//#define P 60 // Sincronización estándar 30 minutos aprox
+#define P 2  //2 minutos para la primera sincronización, la sincronización no sirve (para pruebas nomás)
+
+
 #endif /* CONFIGURACIONES_H_ */

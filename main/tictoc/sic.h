@@ -4,6 +4,7 @@
 #include "linearfit.h"
 #include "circularOrderedArray.h"
 #include "esp_attr.h"
+#include  "../configuraciones.h"
 
 /*
 * This library represents the core of the tic-toc algorithm.
@@ -14,7 +15,7 @@
 #define SAMPLES_SIZE 600
 
 // Amount of algorithm cycles between estimation parameters computation.
-#define P 60 // Sincronización estándar 30 minutos aprox
+//#define P 60 // Sincronización estándar 30 minutos aprox
 //#define P 2  //2 minutos para la primera sincronización (para pruebas nomás)
 
 // Amount of cycles between the extraction of a new mode values from the samples
