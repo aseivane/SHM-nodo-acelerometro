@@ -29,6 +29,9 @@ static const char *TAG = "TAREAS "; // Para los mensajes del micro
 
 uint32_t muestra_inicial_archivo=0;
 bool aux_primer_muestra=true;
+uint32_t buffer_cant_interrupciones=0;
+
+
 
 void IRAM_ATTR leo_muestras(void *arg)
 {
@@ -47,10 +50,13 @@ void IRAM_ATTR leo_muestras(void *arg)
                 if( xSemaphore_tomamuestra != NULL )
                 {
                         if( xSemaphoreTake( xSemaphore_tomamuestra, portMAX_DELAY) == pdTRUE ) {  // El semaforo se libera a la frecuencia de muestreo
+                                buffer_cant_interrupciones = Datos_muestreo.cantidad_de_interrupciones_de_muestreo; // Por si cambia mientras estoy procesando la muestra
 
+// Simulación de pérdida de muestras/////
                                 if(0==gpio_get_level(GPIO_INPUT_IO_0)) { // si presiono el boton
                                         vTaskDelay(100); // Este delay me hace perder muestras
                                 }
+////////////////////////////////////////
 
                                 if (LED == 0) {
                                         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
@@ -62,13 +68,11 @@ void IRAM_ATTR leo_muestras(void *arg)
                                 }
 
                                 if(Datos_muestreo.nro_muestra_en_seg==0 && Datos_muestreo.nro_tabla_enviada == 0 && aux_primer_muestra == true) { // Si es la primer muestra del archivo
-                                        muestra_inicial_archivo = Datos_muestreo.cantidad_de_interrupciones_de_muestreo;
-
-                                        sprintf(mensaje_consola.mensaje,"Muestra_inicial_archivo: %u", muestra_inicial_archivo);
-                                        mensaje_consola.mensaje_nuevo=true;
-
-                                        //  ESP_LOGI(TAG, "Muestra_inicial_archivo: %u", muestra_inicial_archivo);
+                                        muestra_inicial_archivo = buffer_cant_interrupciones;
                                         aux_primer_muestra=false;
+
+                                        // sprintf(mensaje_consola.mensaje,"Muestra_inicial_archivo: %u", muestra_inicial_archivo);
+                                        // mensaje_consola.mensaje_nuevo=true;
                                 }
 
                                 lee_mult_registros(ACELEROMETRO_ADDR, REG_1ER_DATO, Datos_muestreo.datos_mpu, CANT_BYTES_LECTURA); // Leo todos los registros de muestreo del acelerometro/giroscopo
@@ -79,9 +83,13 @@ void IRAM_ATTR leo_muestras(void *arg)
 /// COMPROBAMOS SI SE PERDIERON MUESTRAS Y RELLENAMOS CON CEROS LAS MUESTRAS PERDIDAS EN LA TABLA ///////////////////////////////
 
                                 uint32_t cant_muestras_perdidas=0;
-                                cant_muestras_perdidas = Datos_muestreo.cantidad_de_interrupciones_de_muestreo - Datos_muestreo.cantidad_de_muestras_leidas;  // Este número debería ser cero
+                                cant_muestras_perdidas = 0;
 
-                                if(cant_muestras_perdidas > 0 ) { // Si hay muestras perdidas tengo que rellenar con ceros
+                                if(buffer_cant_interrupciones > Datos_muestreo.cantidad_de_muestras_leidas) { // Si hay muestras perdidas tengo que rellenar con ceros
+
+                                        cant_muestras_perdidas = (buffer_cant_interrupciones - Datos_muestreo.cantidad_de_muestras_leidas)+1;  // Cantidad de muestras faltantes, agrego una por la muestra que estoy descartando
+                                        uint32_t aux_leidas=Datos_muestreo.cantidad_de_muestras_leidas;
+                                        Datos_muestreo.cantidad_de_muestras_leidas--; // Descarto la muestra leida para este muestreo y relleno con ceros
 
                                         // sprintf(mensaje_consola.mensaje,"MUESTRAS PERDIDAS, cantidad: %u  | Interruciones: %u  | Muestras Leidas: %u \n",
                                         //         cant_muestras_perdidas, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas);
@@ -90,10 +98,7 @@ void IRAM_ATTR leo_muestras(void *arg)
                                         // ESP_LOGI(TAG, "MUESTRAS PERDIDAS, cantidad: %u  | Interruciones: %u  | Muestras Leidas: %u",
                                         //         cant_muestras_perdidas, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas);
 
-                                        uint32_t aux_muestras_relleno=0;
-                                        uint32_t aux_leidas=Datos_muestreo.cantidad_de_muestras_leidas;
-
-
+                                        uint32_t aux_muestras_relleno = 0;  // Cantidad de muestras en cero que voy a guardar
                                         if(cant_muestras_perdidas > MUESTRAS_POR_TABLA-Datos_muestreo.nro_muestra_en_seg ) { // Si tengo demasiadas muestras perdidas y no entran en la tabla, entonces lo truncamos
                                                 aux_muestras_relleno = MUESTRAS_POR_TABLA-Datos_muestreo.nro_muestra_en_seg; //Cantidad de muestras que puedo agregar en esta tabla.
                                                 ESP_LOGI(TAG, "TRUNCAMIENTO: Cantidad de muestras perdidas: %u | Cantidad truncada: %u | Nro muestra en seg: %u \n",cant_muestras_perdidas,  aux_muestras_relleno, Datos_muestreo.nro_muestra_en_seg);
@@ -102,11 +107,10 @@ void IRAM_ATTR leo_muestras(void *arg)
                                                 aux_muestras_relleno = cant_muestras_perdidas;
                                         }
 
-
-                                        Datos_muestreo.cantidad_de_muestras_leidas--; // Resto una porque había sumado una de más antes
+                                        // Datos_muestreo.cantidad_de_muestras_leidas--; // Resto una porque había sumado una de más antes
 
                                         //aux_muestras_relleno++;
-                                        while ((aux_muestras_relleno) > 0 ) {
+                                        while (aux_muestras_relleno > 0 ) {
 
                                                 if (Datos_muestreo.selec_tabla_escritura == 0) {
                                                         for (cont_pos_escritura = 0; cont_pos_escritura < CANT_BYTES_LECTURA; cont_pos_escritura++ ) {
@@ -126,10 +130,10 @@ void IRAM_ATTR leo_muestras(void *arg)
 
                                         sprintf(mensaje_consola.mensaje,"MP: Cant_inic: %u Post: %u Leidas_inic %d Leidas_pos %d INT: %d ",
                                                 cant_muestras_perdidas,
-                                                Datos_muestreo.cantidad_de_interrupciones_de_muestreo - Datos_muestreo.cantidad_de_muestras_leidas,
+                                                buffer_cant_interrupciones - Datos_muestreo.cantidad_de_muestras_leidas,
                                                 aux_leidas,
                                                 Datos_muestreo.cantidad_de_muestras_leidas,
-                                              Datos_muestreo.cantidad_de_interrupciones_de_muestreo);
+                                                buffer_cant_interrupciones);
 
                                         mensaje_consola.mensaje_nuevo=true;
 
@@ -139,20 +143,25 @@ void IRAM_ATTR leo_muestras(void *arg)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// SI NO TUVIMOS MUESTRAS PERDIDAS GUARDAMOS LA MUESTRA LEIDA DEL ACELERÓMETRO /////////////////////////////////////////////////////////////////////////////////
 
-                                        if(Datos_muestreo.nro_muestra_en_seg < MUESTRAS_POR_TABLA) {                           // COMPRUEBO SI QUEDA LUGAR EN LA TABLA PARA GUARDAR LA MUESTRA, SINÓ NO LA GUARDO
+                                        if(Datos_muestreo.nro_muestra_en_seg < MUESTRAS_POR_TABLA) {     // COMPRUEBO SI QUEDA LUGAR EN LA TABLA PARA GUARDAR LA MUESTRA, SINÓ NO LA GUARDO
                                                 if (Datos_muestreo.selec_tabla_escritura == 0) {
                                                         for (cont_pos_escritura = 0; cont_pos_escritura < CANT_BYTES_LECTURA; cont_pos_escritura++ ) {
-                                                                Datos_muestreo.TABLA0[cont_pos_escritura + (CANT_BYTES_LECTURA * Datos_muestreo.nro_muestra_en_seg)] = Datos_muestreo.datos_mpu [cont_pos_escritura];                           // Agrega los bytes leidos a la tabla 0
+                                                                Datos_muestreo.TABLA0[cont_pos_escritura + (CANT_BYTES_LECTURA * Datos_muestreo.nro_muestra_en_seg)] = Datos_muestreo.datos_mpu [cont_pos_escritura];                                                             // Agrega los bytes leidos a la tabla 0
                                                         }
                                                 }
                                                 else {
                                                         for (cont_pos_escritura = 0; cont_pos_escritura < CANT_BYTES_LECTURA; cont_pos_escritura++ ) {
-                                                                Datos_muestreo.TABLA1[cont_pos_escritura + (CANT_BYTES_LECTURA * Datos_muestreo.nro_muestra_en_seg)] = Datos_muestreo.datos_mpu [cont_pos_escritura];                           // Agrega los bytes leidos a la tabla 1
+                                                                Datos_muestreo.TABLA1[cont_pos_escritura + (CANT_BYTES_LECTURA * Datos_muestreo.nro_muestra_en_seg)] = Datos_muestreo.datos_mpu [cont_pos_escritura];                                                             // Agrega los bytes leidos a la tabla 1
                                                         }
                                                 }
                                                 Datos_muestreo.nro_muestra_en_seg++;
                                         }
+
                                 }
+
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// DETECTAMOS SI SE LLENÓ LA TABLA  ////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,16 +235,13 @@ void IRAM_ATTR guarda_datos(void *arg)
 
               #ifdef ARCHIVOS_CON_ENCABEZADO
 //
-                                                                fprintf(f_samples,"%u\n",muestra_inicial_archivo);
-                                                                fprintf(f_samples,"%d\n",MUESTRAS_POR_SEGUNDO);
+                                                                fprintf(f_samples,"%010u\n",muestra_inicial_archivo);
+                                                                fprintf(f_samples,"%010d\n",MUESTRAS_POR_SEGUNDO);
 
-                                                                // fprintf(f_samples,"Timestamp_inicio_muestreo: %lld\n", Datos_muestreo.epoch_inicio);
-                                                                // fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %u\n",muestra_inicial_archivo);
-                                                                // fprintf(f_samples,"Muestras_por_segundo: %d\n",MUESTRAS_POR_SEGUNDO);
 
                                                                 aux_primer_muestra=true;
 
-                                                                ESP_LOGI(TAG, "Nuevo archivo. %s  - muestra_inicial_archivo= %u Datos_muestreo.cantidad_de_interrupciones_de_muestreo= %u", archivo, muestra_inicial_archivo, Datos_muestreo.cantidad_de_interrupciones_de_muestreo );
+                                                                ESP_LOGI(TAG, "Nuevo archivo. %s  - muestra_inicial_archivo= %u Datos_muestreo.cantidad_de_interrupciones_de_muestreo= %u", archivo, muestra_inicial_archivo, buffer_cant_interrupciones );
               #endif
                                                         }
                                                 }
@@ -264,7 +270,6 @@ void IRAM_ATTR guarda_datos(void *arg)
                                                                 Datos_muestreo.nro_tabla_guardada = 0; // Reinicio el contador de tablas en archivo
                                                         }
                                                 }
-
 
                                                 xSemaphoreGive( xSemaphore_mutex_archivo ); // Habilito que otro use el archivo
                                         }
@@ -301,23 +306,7 @@ void muestra_info(void *arg)
                 }
 
 
-
-                //      char ticToctimestamp[64];
-                //      char timestamp[64];
-                //              microsToTimestamp(epochInMicros(), timestamp);
-
-                // if(!ticTocReady(ticTocData)) {
-                //       //  ESP_LOGI(TAG, "TicToc Sincronizado, esperando sincronismo");
-                // } else {
-                //       //  int64_t ttTime = ticTocTime(ticTocData);
-                //       //  microsToTimestamp(ttTime, ticToctimestamp);
-                //     //    ESP_LOGI(TAG, "TicToc Sincronizado");
-                // }
-
-
-
-
-//        ESP_LOGI(TAG, "DEBUG | Interrupciones= %u | Muestras Leidas= %u | Nro de muestra en seg= %u | Estado= %d" ,Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas, Datos_muestreo.nro_muestra_en_seg, Datos_muestreo.estado_muestreo);
+                ESP_LOGI(TAG, "DEBUG | Int= %u | Muestras= %u | Nro en seg= %u | Tabla= %d",buffer_cant_interrupciones, Datos_muestreo.cantidad_de_muestras_leidas, Datos_muestreo.nro_muestra_en_seg, Datos_muestreo.nro_tabla_guardada);
 
 
 //
