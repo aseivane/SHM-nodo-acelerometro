@@ -6,4 +6,3 @@
 PROJECT_NAME := vialidad
 
 include $(IDF_PATH)/make/project.mk
-

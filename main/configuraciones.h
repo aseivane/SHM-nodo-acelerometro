@@ -11,15 +11,15 @@
 #define TICTOC_PORT 8080                // Puerto del algoritmo de sincronismo
 
 //#define TICTOC_SERVER "192.168.0.100"   // Ip del servidor de sincronismo
-//#define EXAMPLE_ESP_WIFI_SSID "The Dude"        //SSID WIFI (Nombre de red)
-//#define EXAMPLE_ESP_WIFI_PASS "zarzaparrilla"   //Contraseña WIFI
+//#define WIFI_SSID "The Dude"        //SSID WIFI (Nombre de red)
+//#define WIFI_PASS "zarzaparrilla"   //Contraseña WIFI
 //#define IP_BROKER_MQTT "192.168.0.10"   //Direccion del Broker MQTT
 
 
-#define EXAMPLE_ESP_WIFI_SSID "vialidad"        //SSID WIFI (Nombre de red)
-#define EXAMPLE_ESP_WIFI_PASS "pruebavialidad"   //Contraseña WIFI
-#define IP_BROKER_MQTT "192.168.43.203"   //Direccion del Broker MQTT
-#define TICTOC_SERVER "192.168.43.203"   // Ip del servidor de sincronismo
+#define WIFI_SSID "The Dude"        //SSID WIFI (Nombre de red)
+#define WIFI_PASS "zarzaparrilla"   //Contraseña WIFI
+#define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
+#define TICTOC_SERVER "192.168.0.50"   // Ip del servidor de sincronismo
 
 
 // Configuracion del MQTT

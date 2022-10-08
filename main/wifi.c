@@ -32,8 +32,8 @@
    If you'd rather not, just change the below entries to strings with
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
  */
-// #define EXAMPLE_ESP_WIFI_SSID "The Dude"
-// #define EXAMPLE_ESP_WIFI_PASS "zarzaparrilla"
+// #define WIFI_SSID "The Dude"
+// #define WIFI_PASS "zarzaparrilla"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  10
 
 /* FreeRTOS event group to signal when we are connected*/
@@ -124,8 +124,8 @@ void connectToWiFi()
 
         wifi_config_t wifi_config = {
                 .sta = {
-                        .ssid = EXAMPLE_ESP_WIFI_SSID,
-                        .password = EXAMPLE_ESP_WIFI_PASS,
+                        .ssid = WIFI_SSID,
+                        .password = WIFI_PASS,
                         .pmf_cfg = {
                                 .capable = true,
                                 .required = false
@@ -151,9 +151,9 @@ void connectToWiFi()
         /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
          * happened. */
         if (bits & WIFI_CONNECTED_BIT) {
-                ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+                ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", WIFI_SSID, WIFI_PASS);
         } else if (bits & WIFI_FAIL_BIT) {
-                ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+                ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", WIFI_SSID, WIFI_PASS);
         } else {
                 ESP_LOGE(TAG, "UNEXPECTED EVENT");
         }

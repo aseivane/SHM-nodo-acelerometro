@@ -28,7 +28,7 @@ static const char *TAG = "MQTT ";
 
 const char Topic_InicioMuestreo[] = "control/inicio_muestreo";
 const char Topic_InicioMuestreo_async[] = "control/inicio_muestreo_async";
-const char Topic_Cancelacion_Muestreo[] = "control/cancelacion_muestreo";
+const char Topic_Cancelacion_Muestreo[] = "control/cancelar_muestreo";
 const char Topic_Peticion_estado[] = "control/estado";
 const char Topic_reiniciar[] = "control/reiniciar";
 const char Topic_borrarSD[] = "control/borrarSD";
@@ -259,7 +259,10 @@ void mensaje_mqtt_estado(void) {
         }
 
         if(Datos_muestreo.estado_muestreo==ESTADO_ESPERANDO_MENSAJE_DE_INICIO) {
-          strncat(mensaje, " esperando", 90);
+          strncat(mensaje, " standby", 90);
+        }
+        else if(Datos_muestreo.estado_muestreo==ESTADO_CONFIGURAR_ALARMA_INICIO_A || Datos_muestreo.estado_muestreo==ESTADO_CONFIGURAR_ALARMA_INICIO_B || Datos_muestreo.estado_muestreo==ESTADO_ESPERANDO_INICIO ){
+          strncat(mensaje, " esperando_hora_inicio", 90);
         }
         else{
           strncat(mensaje, " muestreando", 90);

@@ -23,6 +23,7 @@
 // Entradas
 #define BOTON_1     27  // Entrada en GPIO 27  → BOTON 1
 #define BOTON_2     26  // Entrada en GPIO 26  → BOTON 2
+#define CARD_SENSE  5
 
 //salidas
 #define LED_1    33 // LED_1
@@ -30,7 +31,7 @@
 
 #define GPIO_OUTPUT_PIN_SEL  ((1ULL<<LED_1) | (1ULL<<LED_2))
 
-#define GPIO_INPUT_PIN_SEL   ((1ULL<<BOTON_1) | (1ULL<<BOTON_2))
+#define GPIO_INPUT_PIN_SEL   ((1ULL<<BOTON_1) | (1ULL<<BOTON_2) | (1ULL<<CARD_SENSE))
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
