@@ -69,6 +69,10 @@ TicTocData * ticTocData;
 
 static const char *TAG = "MAIN "; // Para los mensajes del micro
 
+char id_nodo[20];
+volatile char dir_ip[20];
+
+
 //////////////////////////////////////////////////////////////////
 /**
  * @brief Función main
@@ -85,12 +89,9 @@ void app_main(void)
         esp_log_level_set("SD_CARD ", ESP_LOG_INFO );
         esp_log_level_set("WIFI ", ESP_LOG_ERROR );
         esp_log_level_set("MQTT ", ESP_LOG_INFO );
-        esp_log_level_set("MQTT_ANALISIS ", ESP_LOG_INFO );
+        esp_log_level_set("MENSAJES_MQTT ", ESP_LOG_INFO );
         esp_log_level_set("TICTOC ", ESP_LOG_ERROR );
         esp_log_level_set("HTTP_FILE_SERVER ", ESP_LOG_ERROR );
-
-
-
 
         /* Valores posibles
            ESP_LOG_NONE → No log output
@@ -100,6 +101,17 @@ void app_main(void)
            ESP_LOG_DEBUG → Extra information which is not necessary for normal use (values, pointers, sizes, etc).
            ESP_LOG_VERBOSE → Bigger chunks of debugging information, or frequent messages which can potentially flood the output.
          */
+
+
+
+// Obtencion de la identificación del nodo (string del macadress de la interfaz Wifi)
+        uint8_t derived_mac_addr[6] = {0};
+        ESP_ERROR_CHECK(esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA));
+        sprintf(id_nodo, "%x%x%x%x%x%x",
+                 derived_mac_addr[0], derived_mac_addr[1], derived_mac_addr[2],
+                 derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
+        ESP_LOGI(TAG, "Identificación: %s", id_nodo);
+
 
         // Primero que nada me conecto a la red
         connectToWiFi();

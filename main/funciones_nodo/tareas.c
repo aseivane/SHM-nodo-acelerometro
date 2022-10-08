@@ -9,6 +9,8 @@
 #include "../tictoc/daemon.h"
 #include "../tictoc/microtime.h"
 
+#include "mqtt.h"
+
 #include "tareas.h"
 
 #define MENSAJES_MQTT
@@ -25,6 +27,7 @@ extern muestreo_t Datos_muestreo;
 extern mensaje_t mensaje_consola;
 
 extern TicTocData * ticTocData;
+
 
 static const char *TAG = "TAREAS "; // Para los mensajes del micro
 
@@ -119,6 +122,11 @@ void IRAM_ATTR guarda_datos(void *arg)
 
                         if( xSemaphoreTake( xSemaphore_guardatabla, portMAX_DELAY ) == pdTRUE ) //Si se guardó una tabla de datos se libera el semáforo
                         {
+
+                        //  mensaje_mqtt_error("Mensaje de error de prueba");
+                      //    mensaje_mqtt_estado();
+// mensaje_confirmacion(true);
+// mensaje_confirmacion(false);
 //gpio_set_level(GPIO_OUTPUT_IO_0, 1);
                                 // if (LED == 0) {
                                 //         gpio_set_level(GPIO_OUTPUT_IO_0, 1);

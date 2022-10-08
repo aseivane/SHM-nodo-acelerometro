@@ -9,14 +9,15 @@
 #ifndef MQTT_H
 #define MQTT_H
 
-// Configuracion del MQTT
-#define Id_NODO "nodo_vialidad"
-#define IP_BROKER_MQTT "192.168.0.10"
-#define PUERTO_MQTT 1883
-#define USUARIO_MQTT "usuario"
-#define PASSWD_MQTT  "usuariopassword"
+// // Configuracion del MQTT
+// #define Id_NODO "nodo_vialidad"
+// #define IP_BROKER_MQTT "192.168.0.10"
+// #define PUERTO_MQTT 1883
+// #define USUARIO_MQTT "usuario"
+// #define PASSWD_MQTT  "usuariopassword"
 
 
+#include "../main.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -26,7 +27,7 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
-//#include "protocol_examples_common.h"
+
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -42,15 +43,7 @@
 
 
 void inicio_mqtt(void);
-void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int mensaje_size);
-void subscripciones(esp_mqtt_client_handle_t client);
+//void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int mensaje_size);
 
-
-// Funciones de envío de mensajes
-void mensaje_mqtt_error(char * mensaje_error);
-void mensaje_mqtt_estado(void);
-void mensaje_confirmacion(bool inicio_fin);
-
-// Analisis de los mensajes
 
 #endif //MQTT_H

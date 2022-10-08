@@ -2,11 +2,13 @@
  *  \brief	Contiene las funciones de inicializacion y manejo del protocolo mqtt
  *  Autor: Ramiro Alonso
  *  Versión: 1
- *	Contiene las funciones de manejo e inicializacion de los GPIOs
+ *	Contiene las funciones de manejo e inicializacion del MQTT
+ *  https://www.esp8266.com/viewtopic.php?p=91643
  */
 
 #include "mqtt.h"
 #include "../main.h"
+#include "../tictoc/daemon.h"
 
 
 const char* mqtt_server = IP_BROKER_MQTT;
@@ -24,20 +26,32 @@ static const char *TAG = "MQTT ";
 #define MAX_CANT_ARGS  5
 
 
-const char Topic_Base[] = "puente_x";
-const char Topic_InicioMuestreo[] = "/control/inicio_muestreo";
+const char Topic_InicioMuestreo[] = "control/inicio_muestreo";
+const char Topic_Cancelacion_Muestreo[] = "control/cancelacion_muestreo";
+const char Topic_Peticion_estado[] = "control/estado";
+const char Topic_reiniciar[] = "control/reiniciar";
+const char Topic_formatear[] = "control/formatear";
 
 extern int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
 extern bool esperando_inicio;
 extern muestreo_t Datos_muestreo;
+extern TicTocData * ticTocData;
+
+
+extern char id_nodo[20];
+extern char dir_ip[20];
+extern wifi_ap_record_t wifidata;
+
+
 
 
 void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int mensaje_size){
 
 // Le saco la base al topic recibido. Porque eso cambia entre instalaciones.
         char topic_rcv[MAX_TOPIC_LENGTH] = "";
-        memcpy(topic_rcv, topic+strlen(Topic_Base), topic_size - strlen(Topic_Base));
+//    memcpy(topic_rcv, topic+strlen(Topic_Base), topic_size - strlen(Topic_Base));
 
+        strncpy(topic_rcv, topic, topic_size);
         /*SEPARO EN ARGUMENTOS*/
         char args_rcv[MAX_CANT_ARGS][MAX_ARGS_LENGTH];
         char msg_rcv[MAX_MSG_LENGTH] = "";
@@ -48,46 +62,71 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
         token = strtok(msg_rcv, s);
         int nro_arg = 0;
         while( token != NULL ) {
-                printf( " %s\n", token );
                 strcpy(args_rcv[nro_arg], token);
                 token = strtok(NULL, s);
                 nro_arg++;
         }
 
-        printf("TOPIC=%.*s\r\n", topic_size,  topic);
-        printf("TOPIC sin base= %s\r\n", topic_rcv);
-        printf("DATA=%.*s\r\n", mensaje_size, mensaje);
-
+        // ESP_LOGI(TAG,"TOPIC= %.*s ", topic_size,  topic_rcv);
+        // ESP_LOGI(TAG,"MENSAJE= %.*s ", mensaje_size, mensaje);
 
         if(strcmp(Topic_InicioMuestreo, topic_rcv)==0) {
+                ESP_LOGI(TAG, "Mensaje de inicio de muestreo recibido");
                 Datos_muestreo.epoch_inicio = atoll(args_rcv[0]);
                 Datos_muestreo.epoch_inicio = Datos_muestreo.epoch_inicio * 1000000; // Lo paso a microsegundos
                 Datos_muestreo.duracion_muestreo = atoi(args_rcv[1]);
                 Datos_muestreo.nro_muestreo = atoi(args_rcv[2]);
                 Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO;
                 Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
-                printf("Tiempo de inicio: %llu \n",Datos_muestreo.epoch_inicio);
-                printf("Duracion del muestreo: %d \n",Datos_muestreo.duracion_muestreo);
-                printf("Numero de muestreo : %d \n",Datos_muestreo.nro_muestreo);
-
-
+                ESP_LOGI(TAG, "Tiempo de inicio: %llu ",Datos_muestreo.epoch_inicio);
+                ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
+                ESP_LOGI(TAG, "Numero de muestreo : %d ",Datos_muestreo.nro_muestreo);
         }
 
+        else if(strcmp(Topic_Cancelacion_Muestreo, topic_rcv)==0) {
+                ESP_LOGI(TAG, "Mensaje de cancelación de muestreo recibido");
+        }
+
+        else if(strcmp(Topic_Peticion_estado, topic_rcv)==0) {
+                ESP_LOGI(TAG, "Mensaje de peticion de estado recibido");
+                mensaje_mqtt_estado(); // Al conectarse envía un mensaje de estado
+        }
+
+        else if(strcmp(Topic_reiniciar, topic_rcv)==0) {
+                if(strcmp("0", args_rcv[0])==0 || strcmp(id_nodo, args_rcv[0])==0 ) {
+                        ESP_LOGI(TAG, "Mensaje de reinicio recibido");
+                        esp_restart(); // Soft reset
+                }
+        }
+
+        else if(strcmp(Topic_formatear, topic_rcv)==0) {
+                if(strcmp("0", args_rcv[0])==0 || strcmp(id_nodo, args_rcv[0])==0 ) {
+                        ESP_LOGI(TAG, "Mensaje de formateo recibido");
+                        ESP_LOGE(TAG, "FALTA EL PROCESO DE FORMATEO");
+                    //    extraccion_tarjeta_SD();
+
+                        borrar_datos_SD();
+
+                    //    inicializacion_tarjeta_SD();
+                }
+        }
 }
+
+
+
+
 
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
         esp_mqtt_client_handle_t client = event->client;
-        int msg_id;
+
         // your_context_t *context = event->context;
         switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
                 ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
                 subscripciones(client); // Despues de conectarme me subscribo a los topics
 
-
-                msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 0);
-                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                mensaje_mqtt_estado(); // Al conectarse envía un mensaje de estado
 
                 break;
         case MQTT_EVENT_DISCONNECTED:
@@ -106,8 +145,6 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
                 break;
         case MQTT_EVENT_DATA:   // Cuando recibo un mensaje a un topic que estoy subcripto.
                 ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-                // printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-                // printf("DATA=%.*s\r\n", event->data_len, event->data);
                 analizar_mensaje_mqtt(event->topic,event->topic_len, event->data, event->data_len );
                 break;
         case MQTT_EVENT_ERROR:
@@ -125,6 +162,16 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         mqtt_event_handler_cb(event_data);
 }
 
+//esp_mqtt_client_handle_t client;
+
+static esp_mqtt_client_handle_t client;
+
+esp_mqtt_client_handle_t get_mqtt_client_handle(void)
+{
+        return client;
+}
+
+
 static void mqtt_app_start(void)
 {
         esp_mqtt_client_config_t mqtt_cfg = {
@@ -135,37 +182,98 @@ static void mqtt_app_start(void)
                 .port = mqttPort,
         };
 
-        esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg); //   Creates mqtt client handle based on the configuration.
+        ESP_LOGI(TAG, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
+
+        client = esp_mqtt_client_init(&mqtt_cfg); //   Creates mqtt client handle based on the configuration.
+
         esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client); // Registro el evento?
         esp_mqtt_client_start(client); // Starts mqtt client with already created client handle.
 
+}
+
+
+void mensaje_mqtt_estado(void) {
+        int msg_id;
+//  msg_id = esp_mqtt_client_publish(get_mqtt_client_handle(), "/topic/qos1", "data_3", 0, 1, 0);
+        char mensaje[100];
+        esp_wifi_sta_get_ap_info(&wifidata); //https://www.esp32.com/viewtopic.php?t=578
+
+        sprintf(mensaje, "%s %s %d nodo_acelerometro", id_nodo, dir_ip, wifidata.rssi);
+
+        if(ticTocReady(ticTocData)) {
+                int64_t ttTime_irq;
+                ttTime_irq = ticTocTime(ticTocData);
+                char mensaje2[100];
+                sprintf(mensaje2, " sincronizado hora:  %lld",ttTime_irq);
+
+                strncat(mensaje, mensaje2, 90);
+
+        }
+        else{
+                strncat(mensaje, " no_sincronizado", 90);
+        }
+
+
+
+
+        msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/estado", mensaje, 0, 1, 0, 1);
+        ESP_LOGI(TAG, "Mensaje de estado publicado, msg_id=%d", msg_id);
+}
+
+void mensaje_mqtt_error(char * mensaje_error) {
+        int msg_id;
+        msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/error", mensaje_error, 0, 1, 0, 1);
+
+        ESP_LOGI(TAG, "Mensaje de error publicado, msg_id=%d", msg_id);
+}
+
+void mensaje_confirmacion(bool inicio_fin) {
+        int msg_id;
+        if(inicio_fin) {
+                msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/confirmacion", "INICIO_MUESTREO", 0, 1, 0, 1);
+        }
+        else{
+                msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/confirmacion", "FIN_MUESTREO", 0, 1, 0, 1);
+        }
+        ESP_LOGI(TAG, "Mensaje de confirmación publicado, msg_id=%d", msg_id);
 }
 
 void subscripciones(esp_mqtt_client_handle_t client){
 
         char topic_subscribe[MAX_TOPIC_LENGTH] = "";
 
-        strcat(topic_subscribe, Topic_Base);
         strcat(topic_subscribe, Topic_InicioMuestreo);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
+        strcpy(topic_subscribe, ""); // Limpio el string
+
+
+        strcat(topic_subscribe, Topic_Cancelacion_Muestreo);
+        esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
+        strcpy(topic_subscribe, ""); // Limpio el string
+
+
+        strcat(topic_subscribe, Topic_Peticion_estado);
+        esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
+        strcpy(topic_subscribe, ""); // Limpio el string
+
+
+        strcat(topic_subscribe, Topic_reiniciar);
+        esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
+        strcpy(topic_subscribe, ""); // Limpio el string
+
+
+        strcat(topic_subscribe, Topic_formatear);
+        esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string
 
 }
 
+
 void inicio_mqtt(void){
         mqtt_app_start();
 }
-
-
-
-
-/*
-
-   // Para publicar
-   msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-   ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-
-
-   msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
-   ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
- */

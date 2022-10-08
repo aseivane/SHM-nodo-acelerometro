@@ -14,6 +14,7 @@
 
 void inicializacion_tarjeta_SD(void);
 void extraccion_tarjeta_SD(void);
+void borrar_datos_SD(void);
 
 
 /*****************************************************************************
