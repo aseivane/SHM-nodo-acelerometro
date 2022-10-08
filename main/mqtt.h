@@ -42,6 +42,9 @@
 
 
 void inicio_mqtt(void);
+void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int mensaje_size);
+void subscripciones(esp_mqtt_client_handle_t client);
+
 
 
 

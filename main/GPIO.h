@@ -19,10 +19,10 @@
 /*****************************************************************************
 * Definiciones
 *****************************************************************************/
-#define GPIO_INPUT_IO_0     16  // Entrada en GPIO 16
+#define GPIO_INPUT_IO_0     16  // Entrada en GPIO 16  → BOTON
 
 
-#define GPIO_OUTPUT_IO_0    32
+#define GPIO_OUTPUT_IO_0    32 // LED
 #define GPIO_OUTPUT_IO_1    33
 #define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_0) | (1ULL<<GPIO_OUTPUT_IO_1))
 

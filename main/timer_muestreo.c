@@ -3,6 +3,10 @@
  *  Autor: Ramiro Alonso
  *  Versión: 1
  *	Contiene las funciones de manejo e inicializacion de los GPIOs
+ *
+ *  IMPORTANTE: EL HANDLER Y TODAS LAS FUNCIONES LLAMADAS DENTRO DE LA INTERRUPCIÓN SE TIENEN QUE UBICAR EN LA IRAM:
+ *   ** https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/general-notes.html **
+ *
  */
 
 #include <stdio.h>
@@ -15,54 +19,61 @@
 #include "GPIO.h"
 
 
+#define MOSTRAR_MENSAJES
 /************************************************************************
 * Variables externas
 ************************************************************************/
 
 extern SemaphoreHandle_t xSemaphore_tomamuestra;
 extern SemaphoreHandle_t xSemaphore_guardatabla;
-extern bool flag_tomar_muestra;
-extern bool flag_muestra_perdida;
-extern uint8_t LED;
 
-extern mensaje_t mensaje;
+extern muestreo_t Datos_muestreo;
+extern mensaje_t mensaje_consola;
+extern uint8_t LED;
 
 /************************************************************************
 * Variables
 ************************************************************************/
-//extern volatile xQueueHandle gpio_evt_queue = NULL;
-volatile uint32_t ciclos_seg;
-volatile uint32_t ciclos_int;
-volatile uint32_t ciclos_ant;
 
 volatile uint64_t valor_interrupcion_timer;
 
+//static const char *TAG = "TIMER ";
 
-static const char *TAG = "TIMER ";
+extern TicTocData * ticTocData;
 
 /**
  * @brief Handler de la interrupcion del Timer
  * El timer cuenta a 40MHz
  */
 
-bool muestreando;
-bool esperando_inicio;
-
-
-extern int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
-extern uint32_t nro_muestra;
-
-int64_t ttTime1;
-int32_t cont_segs_muestreo;
-
-extern TicTocData * ticTocData;
-
-uint64_t aux_t;
-
 void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 {
+        static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-        if(muestreando == true) {
+        switch (Datos_muestreo.estado_muestreo) {
+
+        case ESTADO_CONFIGURAR_ALARMA_INICIO:
+
+                if(ticTocReady(ticTocData)) {
+                        int64_t ttTime_irq;
+                        ttTime_irq = ticTocTime(ticTocData);
+                        timer_set_alarm_value(TIMER_GROUP_0, 0, (Datos_muestreo.epoch_inicio - ttTime_irq)*40); // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
+
+#ifdef MOSTRAR_MENSAJES
+                        sprintf(mensaje_consola.mensaje,"Epoch_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld", Datos_muestreo.epoch_inicio, ttTime_irq,(Datos_muestreo.epoch_inicio - ttTime_irq)*40 );
+                        mensaje_consola.mensaje_nuevo=true;
+#endif
+                        Datos_muestreo.estado_muestreo = ESTADO_MUESTREANDO; // En la proxima interrupcion empiezo a muestrear
+
+
+                }
+                else{ // Dejo la interrupción en un periodo genérico
+                        timer_set_alarm_value(TIMER_GROUP_0, 0, (40000000/MUESTRAS_POR_SEGUNDO));
+                }
+                break;
+
+        case ESTADO_MUESTREANDO:
+
                 // if (LED == 0) {
                 //         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
                 //         LED=1;
@@ -71,66 +82,71 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                 //         LED=0;
                 //         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
                 // }
-                xSemaphoreGiveFromISR( xSemaphore_tomamuestra, NULL ); // Libero el semaforo de muestreo
-                if (flag_tomar_muestra == true) { // Si es true es porque no se leyó la muestra anterior.
-                        flag_muestra_perdida = true;
+                xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
+
+                if (Datos_muestreo.flag_tomar_muestra == true) { // Si es true es porque no se leyó la muestra anterior.
+                        Datos_muestreo.flag_muestra_perdida = true;
                 }
-                flag_tomar_muestra = true;
-                if (nro_muestra == 499) {
+                Datos_muestreo.flag_tomar_muestra = true;
+
+                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
+
+                if (Datos_muestreo.nro_muestra == MUESTRAS_POR_SEGUNDO-1) { // Al finalizar las muestras del segundo vuelvo a sincronizar.
+
+                        Datos_muestreo.contador_segundos++; // Descuento 1 al contador de segundos
+
+                        if (Datos_muestreo.contador_segundos >= Datos_muestreo.duracion_muestreo) { // Si terminé de muestrear
+                                Datos_muestreo.estado_muestreo = ESTADO_ESPERANDO_MENSAJE_DE_INICIO; // Vuelvo al estado de espera de instrucciones
+#ifdef MOSTRAR_MENSAJES
+                                sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d \n", Datos_muestreo.nro_muestreo );
+                                mensaje_consola.mensaje_nuevo=true;
+#endif
+                        }
+
                         if(ticTocReady(ticTocData)) {
-                                cont_segs_muestreo++;
-                                ttTime1 = ticTocTime(ticTocData);
-                                timer_set_alarm_value(TIMER_GROUP_0, 0, tiempo_inicio + cont_segs_muestreo*40000000L); // Setea la alarma para que la proxima interrupcion sea en el inicio.
-                                sprintf(mensaje.mensaje,"Tiempo_inicio: %lld   Inicio_prox:%lld", tiempo_inicio, tiempo_inicio + cont_segs_muestreo*40000000L );
-                                mensaje.mensaje_nuevo=true;
+                                int64_t ttTime_irq;
+                                ttTime_irq = ticTocTime(ticTocData);
+                                timer_set_alarm_value(TIMER_GROUP_0, 0, (Datos_muestreo.epoch_inicio + Datos_muestreo.contador_segundos*1000000L - ttTime_irq)*40); // Setea la alarma para que la proxima interrupcion sea en el inicio.
+#ifdef MOSTRAR_MENSAJES
+                                sprintf(mensaje_consola.mensaje,"Epoch_inicio: %lld   Inicio_prox_seg:%lld  Cantidad de ciclos: %lld \n", Datos_muestreo.epoch_inicio, (Datos_muestreo.epoch_inicio + Datos_muestreo.contador_segundos*1000000L - ttTime_irq) , (Datos_muestreo.epoch_inicio + Datos_muestreo.contador_segundos*1000000L - ttTime_irq)*40);
+                                mensaje_consola.mensaje_nuevo=true;
+#endif
                         }
                 }
-                else{
-                        timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
-                }
+                break;
 
 
+
+        default:
+
+                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
+
+                break;
         }
-        else {
-                if (esperando_inicio == true) {
-                        if(ticTocReady(ticTocData)) {
-                                ttTime1 = ticTocTime(ticTocData);
-                                timer_set_alarm_value(TIMER_GROUP_0, 0, (tiempo_inicio - ttTime1)*40); // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
-
-                                sprintf(mensaje.mensaje,"Tiempo_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld", tiempo_inicio, ttTime1,(tiempo_inicio - ttTime1)*40 );
-                                mensaje.mensaje_nuevo=true;
-
-                                cont_segs_muestreo = 0;
-                                muestreando = true; // En la proxima interrupcion empiezo a muestrear
-                                esperando_inicio = false; // Ya configuré el tiempo de inicio
-                                gpio_set_level(GPIO_OUTPUT_IO_0, 1);
-                        }
-                        else{
-                          timer_set_alarm_value(TIMER_GROUP_0, 0, (40000000/MUESTRAS_POR_SEGUNDO)); // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
-
-                        }
-                }
-        }
-
-
-
-
-
-        /* Unblock the task by releasing the semaphore. */
-
-
-//        xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
-        /* Esto se usa para comprobar si se perdieron muestras */
-
-
-        //   valor_interrupcion_timer = valor_interrupcion_timer + 40000; // Modifico el valor de cuenta de la alarma
-
-        //    timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
 
         timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
         timer_group_enable_alarm_in_isr(TIMER_GROUP_0, TIMER_0);
 
-        portYIELD_FROM_ISR (); // Solicito cambio de contexto
+        if(xHigherPriorityTaskWoken == pdTRUE) {
+                portYIELD_FROM_ISR (); // Solicito cambio de contexto
+        }
+
+        // static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        //
+        // /* Unblock the task by releasing the semaphore. */
+        // xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
+        //
+        // if (Datos_muestreo.flag_tomar_muestra == true) { // Si es true es porque no se leyó la muestra anterior.
+        //         Datos_muestreo.flag_muestra_perdida = true;
+        // }
+        // Datos_muestreo.flag_tomar_muestra = true;
+        //
+        // timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
+        // timer_group_enable_alarm_in_isr(TIMER_GROUP_0, TIMER_0);
+        //
+        // if(xHigherPriorityTaskWoken == pdTRUE) {
+        // portYIELD_FROM_ISR ();  // Solicito cambio de contexto
+        // }
 }
 
 /*
@@ -142,7 +158,6 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
  */
 void inicializacion_timer_muestreo(int timer_idx, bool auto_reload, uint64_t valor_max_conteo)
 {
-        aux_t = 1000;
         /* Select and initialize basic parameters of the timer */
         timer_config_t config;
         config.divider = TIMER_DIVIDER;

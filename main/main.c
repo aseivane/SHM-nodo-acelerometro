@@ -50,16 +50,10 @@
  */
 #include "main.h"
 
-#include "esp_freertos_hooks.h"      // Algoritmo de sincronismo
-
-
 
 /************************************************************************
 * Variables Globales
 ************************************************************************/
-
-uint32_t ciclos_inic;
-uint32_t ciclos_fin;
 
 FILE *f_samples = NULL;
 
@@ -68,64 +62,37 @@ uint8_t datos [CANT_BYTES_LECTURA];  // Lugar donde guardo los datos leidos del 
 SemaphoreHandle_t xSemaphore_tomamuestra = NULL;
 SemaphoreHandle_t xSemaphore_guardatabla = NULL;
 
-bool flag_tomar_muestra;
-bool flag_muestra_perdida;
-bool flag_tabla_llena;
-bool flag_tabla_perdida;
 
-uint8_t TABLA0[LONG_TABLAS];
-uint8_t TABLA1[LONG_TABLAS];
-uint8_t selec_tabla_escritura;
-uint8_t selec_tabla_lectura;
-uint8_t nro_tabla;
-uint32_t nro_muestra;
-uint32_t nro_archivo;
 uint8_t LED;
 
 uint32_t dir_ticTocData;
-mensaje_t mensaje;
+mensaje_t mensaje_consola;
 
 int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
+
+muestreo_t Datos_muestreo;
 
 static const char *TAG = "MAIN "; // Para los mensajes del micro
 
 
-
-extern bool muestreando;
-extern bool esperando_inicio;
 /**
  * @brief Función main
  */
 TicTocData * ticTocData;
 
-
-
-// PARA EVITAR QUE SALTE EL WDT DE LAS TAREAS IDLE ///////////////
-// NO FUNCIONA !!!  → SE EJECUTAN LOS HANDLERS Y EL wdt SALTA IGUAL
-
-void idle_task_cpu0 (){
-        esp_task_wdt_reset();
-}
-void idle_task_cpu1 (){
-        esp_task_wdt_reset();
-}
 //////////////////////////////////////////////////////////////////
-
 
 void app_main(void)
 {
 // Configuracion de los mensajes de log por el puerto serie
-        esp_log_level_set("MAIN ", ESP_LOG_ERROR );
+        esp_log_level_set("MAIN ", ESP_LOG_INFO );
         esp_log_level_set("MPU6050 ", ESP_LOG_ERROR );
         esp_log_level_set("TAREAS ", ESP_LOG_ERROR );
         esp_log_level_set("SD_CARD ", ESP_LOG_ERROR );
-        esp_log_level_set("TIMER ", ESP_LOG_ERROR );
+//        esp_log_level_set("TIMER ", ESP_LOG_ERROR );
         esp_log_level_set("WIFI ", ESP_LOG_ERROR );
         esp_log_level_set("MQTT ", ESP_LOG_INFO );
         esp_log_level_set("MQTT_ANALISIS ", ESP_LOG_INFO );
-
-
-
         /* Valores posibles
            ESP_LOG_NONE → No log output
            ESP_LOG_ERROR → Critical errors, software module can not recover on its own
@@ -136,24 +103,17 @@ void app_main(void)
          */
 
 // Inicialización de Variables /////////
-        selec_tabla_escritura = 0;
-        selec_tabla_lectura = 0;
-        nro_muestra = 0;
-        flag_tabla_llena = false;
-        flag_tomar_muestra = false;
-        flag_muestra_perdida = false;
-        nro_archivo=0;
-        nro_tabla=0;
-
-
-
-        muestreando = false;
-        esperando_inicio = true;
-
-//      tiempo_inicio = 1600276800000000; // Hora en que comienza el muetreo
-        tiempo_inicio = 1600294200000000; // Hora en que comienza el muetreo
-
-
+        Datos_muestreo.selec_tabla_escritura = 0;
+        Datos_muestreo.selec_tabla_lectura = 0;
+        Datos_muestreo.nro_muestra = 0;
+        Datos_muestreo.flag_tabla_llena = false;
+        Datos_muestreo.flag_tomar_muestra = false;
+        Datos_muestreo.flag_muestra_perdida = false;
+        Datos_muestreo.nro_archivo=0;
+        Datos_muestreo.nro_tabla=0;
+        Datos_muestreo.contador_segundos=0;
+        Datos_muestreo.epoch_inicio=0;
+        Datos_muestreo.estado_muestreo=ESTADO_ESPERANDO_MENSAJE_DE_INICIO;
 
 // Creo los semaforos que voy a usar////////////////////////////////////////////
         xSemaphore_tomamuestra = xSemaphoreCreateBinary();
@@ -161,20 +121,23 @@ void app_main(void)
 
         if( xSemaphore_tomamuestra != NULL &&  xSemaphore_guardatabla != NULL)
         {
-                printf("Semaforos creado correctamente\n");
+                ESP_LOGI(TAG, "SEMAFOROS CREADOS CORECTAMENTE");
         }
 ////////////////////////////////////////////////////////////////////////////////
 
         inicializacion_gpios();
         connectToWiFi();
+        inicio_mqtt();
+        ESP_ERROR_CHECK(inicializacion_i2c());
+
+#ifndef DESACTIVAR_SD
+        inicializacion_tarjeta_SD();
+#endif
 
         /* ALGORITMO DE SINCRONISMO*/
         TicTocData * ticTocData1 = malloc(sizeof(TicTocData)); /* ALGORITMO DE SINCRONISMO*/
         ticTocData = ticTocData1;  /* ALGORITMO DE SINCRONISMO*/
         setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);  /* ALGORITMO DE SINCRONISMO*/
-
-
-        inicio_mqtt();
 
 /* ------------------------------------------
    Una pausa al inicio
@@ -185,50 +148,26 @@ void app_main(void)
         }
 /* ------------------------------------------ */
 
-    #ifdef GUARDA_DATOS_SD
-        inicializacion_tarjeta_SD();
-    #endif
-
-        ESP_ERROR_CHECK(inicializacion_i2c());
-
-        int timer_muestreo_idx = 0;
-        printf("Iniciando timer\n");
-        inicializacion_timer_muestreo(timer_muestreo_idx, 1,(40000000/MUESTRAS_POR_SEGUNDO));
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CREO LAS TAREAS DEFINIENDO EN QUE NÚCLEO SE EJECUTAN
 // IMPORTANTE: El nombre de la tarea tiene que tener menos de 16 caracteres
-
-        esp_register_freertos_tick_hook_for_cpu(idle_task_cpu0, 0);
-        esp_register_freertos_tick_hook_for_cpu(idle_task_cpu1, 1);
-
-        printf("Iniciando tareas\n");
+        ESP_LOGI(TAG, "INICIANDO TAREAS");
         TaskHandle_t Handle_tarea_i2c = NULL;
         xTaskCreatePinnedToCore(leo_muestras, "leo_muestras", 1024 * 2, (void *)0, 10, &Handle_tarea_i2c,1);
         TaskHandle_t Handle_muestra_info = NULL;
         xTaskCreatePinnedToCore(muestra_info, "muestra_info", 1024 * 2, (void *)0, 4, &Handle_muestra_info,0);
+
+#ifndef DESACTIVAR_SD
         TaskHandle_t Handle_guarda_datos = NULL;
         xTaskCreatePinnedToCore(guarda_datos, "guarda_datos", 1024 * 8, (void *)0, 9, &Handle_guarda_datos,0);
+#endif
 
-        printf("Loop infinito\n");
+// La interrupcion la inicializo al final
+        int timer_muestreo_idx = 0;
+        ESP_LOGI(TAG, "INICIANDO TIMER");
+        inicializacion_timer_muestreo(timer_muestreo_idx, 1,(40000000/MUESTRAS_POR_SEGUNDO));
 
-        for(;;) {
-
-                vTaskDelay(10000 / portTICK_PERIOD_MS);
-
-                  char ticToctimestamp[64];
-                  char timestamp[64];
-                  microsToTimestamp(epochInMicros(), timestamp);
-                  if(!ticTocReady(ticTocData)) {
-                  printf("Waiting for ticTocTo be ready. (systemTime: %s)\n", timestamp);
-                  } else {
-                  int64_t ttTime = ticTocTime(ticTocData);
-                  microsToTimestamp(ttTime, ticToctimestamp);
-                  printf("TicTocTime %s (%lld) (systemTime: %s)\n",ticToctimestamp,  ttTime, timestamp);
-                  }
-        }
-
-}
+} // Fin de MAIN
 
 
 

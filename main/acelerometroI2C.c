@@ -10,21 +10,11 @@
 #include "sdkconfig.h"
 #include "acelerometroI2C.h"
 #include "esp_err.h"
-
-/* PARA LOS MENSAJES DE LOGUEO *///////////////////////////////////////////////
-/*  Posibles valores ( Estos mensajes pueden producir delays en el programa )
- ESP_LOG_NONE
- ESP_LOG_ERROR
- ESP_LOG_WARN
- ESP_LOG_INFO
- ESP_LOG_DEBUG
- ESP_LOG_VERBOSE
-*/
-static const char *TAG = "MPU6050 ";
 #include "esp_log.h"
+
+static const char *TAG = "MPU6050 ";
+
 ///////////////////////////////////////////////////////////////////////////////
-
-
 
 /************************************************************************
 * Variables

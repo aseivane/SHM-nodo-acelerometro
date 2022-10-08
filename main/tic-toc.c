@@ -114,13 +114,14 @@ void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 	ticToc->serverPort = serverPort;
 
 
-	xTaskCreate(
+	xTaskCreatePinnedToCore(
 		getTimeStamps,    // Function that should be called
 	    "TicTocDaemon",   // Name of the task (for debugging)
 	    4000,            // Stack size (bytes)
 	    ticToc,            // Parameter to pass
 	    1,               // Task priority
-	    NULL             // Task handle
+	    NULL,             // Task handle
+			0								// Nucleo de ejecución
 	  );
 }
 

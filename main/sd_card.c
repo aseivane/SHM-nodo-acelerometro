@@ -5,6 +5,7 @@
  *	Contiene las funciones de manejo e inicializacion de la tarjeta SD
  */
 
+#include "main.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/unistd.h>
@@ -47,8 +48,9 @@ void inicializacion_tarjeta_SD(void)
 
     ESP_LOGI(TAG, "Using SDMMC peripheral");
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();  // Velocidad por defecto = 20MHz → puede llegar a 40MHz
-    //host.max_freq_khz = 5000;
-
+#ifdef SD_40MHZ
+    host.max_freq_khz = 40000;
+#endif
 
     // This initializes the slot without card detect (CD) and write protect (WP) signals.
     // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.

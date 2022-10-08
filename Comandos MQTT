@@ -11,10 +11,7 @@ Subscribirse:
 Publicar:
     mosquitto_pub -h BROKER -t TOPIC -m MENSAJE -u USUARIO -P PASSWORD
 
-
-     mosquitto_pub -h 192.168.0.5 -t /topic/qos0 -u usuario -P usuariopassword -m "MENSAJE"
-   
-   
+mosquitto_pub -h 192.168.0.5 -t puente_x/control/inicio_muestreo -u usuario -P usuariopassword -m "MENSAJE"
 
 
-
+mosquitto_pub -h 192.168.0.5 -t puente_x/control/inicio_muestreo -u usuario -P usuariopassword -m "1600614518 120 1"   
