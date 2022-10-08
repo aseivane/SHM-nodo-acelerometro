@@ -1,4 +1,6 @@
 /*
+ ** ESTE ARCHIVO INCLUYE LA SOLUCION AL PROBLEMA DEL WIFI !!!!!!!!!!!
+ *
  * wifi.c
  *
  *  Created on: May 9, 2020
