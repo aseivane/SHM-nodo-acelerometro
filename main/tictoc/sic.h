@@ -15,6 +15,7 @@
 #define SAMPLES_SIZE 600
 
 // Amount of algorithm cycles between estimation parameters computation.
+// Esto se volvió a definir en configuraciones.h
 //#define P 60 // Sincronización estándar 30 minutos aprox
 //#define P 2  //2 minutos para la primera sincronización (para pruebas nomás)
 

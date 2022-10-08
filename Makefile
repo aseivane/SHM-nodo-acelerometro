@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := tic-toc-sic
+PROJECT_NAME := vialidad
 
 include $(IDF_PATH)/make/project.mk
 

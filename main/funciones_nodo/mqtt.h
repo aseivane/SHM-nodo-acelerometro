@@ -10,11 +10,11 @@
 #define MQTT_H
 
 // Configuracion del MQTT
-#define Id_NODO "nodo_vialidad"
-#define IP_BROKER_MQTT "192.168.0.10"
-#define PUERTO_MQTT 1883
-#define USUARIO_MQTT "usuario"
-#define PASSWD_MQTT  "usuariopassword"
+// #define Id_NODO "nodo_vialidad"
+// #define IP_BROKER_MQTT "192.168.0.10"
+// #define PUERTO_MQTT 1883
+// #define USUARIO_MQTT "usuario"
+// #define PASSWD_MQTT  "usuariopassword"
 
 
 #include <stdio.h>
