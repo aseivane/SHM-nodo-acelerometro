@@ -25,29 +25,6 @@
 #include "soc/soc.h"
 #include "driver/gpio.h"
 
-//#define GPIO_RX2 GPIO_NUM_16 // Interruption pin
-
-// // static int64_t IRAM_ATTR timeRequest = -1;
-// // static void IRAM_ATTR interruption_handler(void* arg) {
-// //     *((int64_t *)arg) = esp_timer_get_time();
-// // }
-//
-//
-//
-// void setup_int_ext(int64_t * timeRequest){
-//  gpio_config_t gpioConfig;
-//  gpioConfig.pin_bit_mask = GPIO_SEL_16; // RX2
-//  gpioConfig.mode         = GPIO_MODE_INPUT;
-//  gpioConfig.pull_up_en   = GPIO_PULLUP_DISABLE;
-//  gpioConfig.pull_down_en = GPIO_PULLDOWN_ENABLE;
-//  gpioConfig.intr_type    = GPIO_INTR_POSEDGE;
-//  gpio_config(&gpioConfig);
-//
-//  gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-//  gpio_isr_handler_add(GPIO_RX2, interruption_handler, (void*) timeRequest);
-// }
-
-
 
 /************************************************************************
 * Variables Globales
@@ -171,7 +148,7 @@ void app_main(void)
    Una pausa al inicio
    --------------------------------------------- */
         // printf("ESPERANDO SEÑAL DE INICIO \n");
-        // while (gpio_get_level(GPIO_INPUT_IO_0)) { // Freno todo hasta apretar un boton
+        // while (gpio_get_level(BOTON_1)) { // Freno todo hasta apretar un boton
         //         esp_task_wdt_reset(); // Esto no detiene el WDT para el idle task que no llega a correr.
         // }
 /* ------------------------------------------ */
@@ -208,29 +185,7 @@ void app_main(void)
 
 
 
-
-
-
-
-
 // printf("Inicio fwrite(): %u ", ciclos_inic = xthal_get_ccount());
 // ciclos_inic = xthal_get_ccount();
 // printf("FIN fwrite(): %u ", ciclos_fin = xthal_get_ccount());
 // printf("Duracion fwrite(): %u\n", (uint32_t)(ciclos_fin-ciclos_inic) );
-
-
-
-// ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // SIN DEFINIR EL NÚCLEO ...
-//
-//         ESP_LOGI(TAG, "INICIANDO TAREAS");
-//         TaskHandle_t Handle_tarea_i2c = NULL;
-//
-//         xTaskCreate(leo_muestras, "leo_muestras", 1024 * 2, (void *)0, 10, &Handle_tarea_i2c);
-//         TaskHandle_t Handle_muestra_info = NULL;
-//         xTaskCreate(muestra_info, "muestra_info", 1024 * 2, (void *)0, 4, &Handle_muestra_info);
-//
-// #ifndef DESACTIVAR_SD
-//         TaskHandle_t Handle_guarda_datos = NULL;
-//         xTaskCreate(guarda_datos, "guarda_datos", 1024 * 8, (void *)0, 9, &Handle_guarda_datos);
-// #endif

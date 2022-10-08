@@ -53,18 +53,18 @@ void IRAM_ATTR leo_muestras(void *arg)
                                 buffer_cant_interrupciones = Datos_muestreo.cantidad_de_interrupciones_de_muestreo; // Por si cambia mientras estoy procesando la muestra
 
 // Simulación de pérdida de muestras/////
-                                if(0==gpio_get_level(GPIO_INPUT_IO_0)) { // si presiono el boton
+                                if(0==gpio_get_level(BOTON_1)) { // si presiono el boton
                                         vTaskDelay(100); // Este delay me hace perder muestras
                                 }
 ////////////////////////////////////////
 
                                 if (LED == 0) {
-                                        gpio_set_level(GPIO_OUTPUT_IO_0, 1);
+                                        gpio_set_level(LED_1, 1);
                                         LED=1;
                                 }
                                 else {
                                         LED=0;
-                                        gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+                                        gpio_set_level(LED_1, 0);
                                 }
 
                                 if(Datos_muestreo.nro_muestra_en_seg==0 && Datos_muestreo.nro_tabla_enviada == 0 && aux_primer_muestra == true) { // Si es la primer muestra del archivo
@@ -211,12 +211,12 @@ void IRAM_ATTR guarda_datos(void *arg)
                                                 Datos_muestreo.nro_tabla_guardada++; // Aumento contador de tablas llenas
 
                                                 // if (LED == 0) {
-                                                //         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
+                                                //         gpio_set_level(LED_1, 1);
                                                 //         LED=1;
                                                 // }
                                                 // else {
                                                 //         LED=0;
-                                                //         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+                                                //         gpio_set_level(LED_1, 0);
                                                 // }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

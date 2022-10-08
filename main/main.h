@@ -95,6 +95,7 @@ typedef struct mentaje_t {
 #define ESTADO_ESPERANDO_INICIO             3
 #define ESTADO_MUESTREANDO                  4
 #define ESTADO_FINALIZANDO_MUESTREO         5
+#define ESTADO_MUESTREANDO_ASYNC            6
 
 
 typedef struct muestreo_t {

@@ -20,18 +20,17 @@
 * Definiciones
 *****************************************************************************/
 
-#define GPIO_INPUT_IO_0     16  // Entrada en GPIO 16  → BOTON
-#define GPIO_INPUT_IO_1     0  // Entrada en GPIO 16  → BOTON
+// Entradas
+#define BOTON_1     27  // Entrada en GPIO 27  → BOTON 1
+#define BOTON_2     26  // Entrada en GPIO 26  → BOTON 2
 
+//salidas
+#define LED_1    33 // LED_1
+#define LED_2    25 // LED_2
 
-#define GPIO_OUTPUT_IO_0    32 // LED
-#define GPIO_OUTPUT_IO_1    33
-#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_0) | (1ULL<<GPIO_OUTPUT_IO_1))
+#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<LED_1) | (1ULL<<LED_2))
 
-
-//#define GPIO_INPUT_IO_1     5
-#define GPIO_INPUT_PIN_SEL   ((1ULL<<GPIO_INPUT_IO_0) | (1ULL<<GPIO_INPUT_IO_1))
-
+#define GPIO_INPUT_PIN_SEL   ((1ULL<<BOTON_1) | (1ULL<<BOTON_2))
 
 #define ESP_INTR_FLAG_DEFAULT 0
 

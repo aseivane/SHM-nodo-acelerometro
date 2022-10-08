@@ -27,6 +27,7 @@ static const char *TAG = "MQTT ";
 
 
 const char Topic_InicioMuestreo[] = "control/inicio_muestreo";
+const char Topic_InicioMuestreo_async[] = "control/inicio_muestreo_async";
 const char Topic_Cancelacion_Muestreo[] = "control/cancelacion_muestreo";
 const char Topic_Peticion_estado[] = "control/estado";
 const char Topic_reiniciar[] = "control/reiniciar";
@@ -41,8 +42,6 @@ extern TicTocData * ticTocData;
 extern char id_nodo[20];
 extern char dir_ip[20];
 extern wifi_ap_record_t wifidata;
-
-
 
 
 void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int mensaje_size){
@@ -75,18 +74,33 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 ESP_LOGI(TAG, "Mensaje de inicio de muestreo recibido");
                 Datos_muestreo.epoch_inicio = atoll(args_rcv[0]);
                 Datos_muestreo.epoch_inicio = Datos_muestreo.epoch_inicio * 1000000; // Lo paso a microsegundos
-                Datos_muestreo.duracion_muestreo = atoi(args_rcv[1])*60 ;
+                Datos_muestreo.duracion_muestreo = atoi(args_rcv[1])*60;
                 Datos_muestreo.nro_muestreo = atoi(args_rcv[2]);
                 Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO_A;
-              //  Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
-              //  Datos_muestreo.nro_muestra_en_seg = 0;
-              //  Datos_muestreo.nro_muestra_total_muestreo = 0;
+                //  Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
+                //  Datos_muestreo.nro_muestra_en_seg = 0;
+                //  Datos_muestreo.nro_muestra_total_muestreo = 0;
 
 
                 ESP_LOGI(TAG, "Tiempo de inicio: %llu ",Datos_muestreo.epoch_inicio);
                 ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
                 ESP_LOGI(TAG, "Numero de muestreo : %d ",Datos_muestreo.nro_muestreo);
         }
+
+        else if(strcmp(Topic_InicioMuestreo_async, topic_rcv)==0) {
+
+                resetea_muestreo(); // Reseteamos un muestreo en curso
+                ESP_LOGI(TAG, "Mensaje de inicio asincrónico de muestreo recibido");
+
+                Datos_muestreo.duracion_muestreo = atoi(args_rcv[0])*60;
+                Datos_muestreo.nro_muestreo = atoi(args_rcv[1]);
+                Datos_muestreo.estado_muestreo = ESTADO_MUESTREANDO_ASYNC;
+
+                ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
+                ESP_LOGI(TAG, "Numero de muestreo : %d ",Datos_muestreo.nro_muestreo);
+
+        }
+
 
         else if(strcmp(Topic_Cancelacion_Muestreo, topic_rcv)==0) {
                 ESP_LOGI(TAG, "Mensaje de cancelación de muestreo recibido");
@@ -249,24 +263,25 @@ void subscripciones(esp_mqtt_client_handle_t client){
         ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string
 
+        strcat(topic_subscribe, Topic_InicioMuestreo_async);
+        esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
+        strcpy(topic_subscribe, ""); // Limpio el string
 
         strcat(topic_subscribe, Topic_Cancelacion_Muestreo);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);
         ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string
 
-
         strcat(topic_subscribe, Topic_Peticion_estado);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);
         ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string
 
-
         strcat(topic_subscribe, Topic_reiniciar);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);
         ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string
-
 
         strcat(topic_subscribe, Topic_borrarSD);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);

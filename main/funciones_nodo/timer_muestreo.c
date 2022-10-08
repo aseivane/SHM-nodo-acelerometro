@@ -92,12 +92,12 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
         case ESTADO_MUESTREANDO:
 
                 // if (LED == 0) {
-                //         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
+                //         gpio_set_level(LED_1, 1);
                 //         LED=1;
                 // }
                 // else {
                 //         LED=0;
-                //         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+                //         gpio_set_level(LED_1, 0);
                 // }
                 Datos_muestreo.cantidad_de_interrupciones_de_muestreo++;
                 xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
@@ -147,6 +147,41 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                 Datos_muestreo.estado_muestreo = ESTADO_ESPERANDO_MENSAJE_DE_INICIO;         // Vuelvo al estado de espera de instrucciones
 
                 break;
+
+
+        case ESTADO_MUESTREANDO_ASYNC:
+
+                Datos_muestreo.cantidad_de_interrupciones_de_muestreo++;
+                xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
+
+                if (Datos_muestreo.flag_tomar_muestra == true) {                 // Si es true es porque no se leyó la muestra anterior.
+                        Datos_muestreo.flag_muestra_perdida = true;
+                }
+                Datos_muestreo.flag_tomar_muestra = true;
+
+                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);         // Valor de reseteo por defecto del timer. Según frecuencia de muestreo definida
+
+                if ( ((Datos_muestreo.cantidad_de_interrupciones_de_muestreo-1)-(Datos_muestreo.int_contador_segundos*MUESTRAS_POR_SEGUNDO)) >= (MUESTRAS_POR_SEGUNDO-1)) {                   // Al finalizar las muestras del segundo vuelvo a sincronizar.
+
+                        Datos_muestreo.int_contador_segundos++;                 // Aumento 1 al contador de segundos
+
+                        if (Datos_muestreo.int_contador_segundos >= Datos_muestreo.duracion_muestreo) {                 // Si terminé de muestrear
+                                //resetea_muestreo();
+                                Datos_muestreo.estado_muestreo = ESTADO_FINALIZANDO_MUESTREO;                 // Vuelvo al estado de espera de instrucciones
+
+                                        #ifdef MOSTRAR_MENSAJES
+                                sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d | Interrupciones: %d | Muestras leidas: %d \n", Datos_muestreo.nro_muestreo, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas );
+                                mensaje_consola.mensaje_nuevo=true;
+                                        #endif
+                        }
+
+                        else if(ticTocReady(ticTocData)) {         // Sincronizo para el próximo segundo de muestreo
+                                timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);   // Valor de reseteo por defecto del timer. Según frecuencia de muestreo definida
+
+                        }
+                }
+                break;
+
 
         default:
                 timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
