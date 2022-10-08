@@ -30,7 +30,8 @@ extern TicTocData * ticTocData;
 
 static const char *TAG = "TAREAS "; // Para los mensajes del micro
 
-uint32_t muestra_inicial_archivo = 0;
+uint32_t muestra_inicial_archivo=0;
+bool aux_primer_muestra=true;
 
 void IRAM_ATTR leo_muestras(void *arg)
 {
@@ -49,9 +50,6 @@ void IRAM_ATTR leo_muestras(void *arg)
                 {
                         if( xSemaphoreTake( xSemaphore_tomamuestra, portMAX_DELAY) == pdTRUE ) {  // El semaforo se libera a la frecuencia de muestreo
 
-
-
-
                                 if (LED == 0) {
                                         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
                                         LED=1;
@@ -59,6 +57,13 @@ void IRAM_ATTR leo_muestras(void *arg)
                                 else {
                                         LED=0;
                                         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+                                }
+
+
+                                if(Datos_muestreo.nro_muestra_en_seg==0 && Datos_muestreo.nro_tabla == 0 && aux_primer_muestra == true) { // Si es la primer muestra del archivo
+
+                                        muestra_inicial_archivo = Datos_muestreo.nro_muestra_total_muestreo;
+                                        aux_primer_muestra=false;
                                 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,10 +84,6 @@ void IRAM_ATTR leo_muestras(void *arg)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// DETECTAMOS SI SE LLENÓ LA TABLA  ////////////////////////////////////////////////////////////////////////////////////////////
 
-                                if(Datos_muestreo.nro_muestra_en_seg==0 && Datos_muestreo.nro_tabla == 0) { // Si es la primer muestra del archivo
-                                        muestra_inicial_archivo = Datos_muestreo.nro_muestra_total_muestreo;
-                                }
-
                                 Datos_muestreo.nro_muestra_en_seg++;
 
                                 if (Datos_muestreo.nro_muestra_en_seg == MUESTRAS_POR_TABLA) { // Si llené una tabla paso a la siguiente, y habilito su almacenamiento.
@@ -99,6 +100,8 @@ void IRAM_ATTR leo_muestras(void *arg)
                                         }
                                         Datos_muestreo.flag_tabla_llena = true;
                                         Datos_muestreo.nro_muestra_en_seg = 0; // Reinicio el contador de muestras
+
+
                                         xSemaphoreGive( xSemaphore_guardatabla ); // Habilito la escritura de la tabla
                                 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,15 +113,12 @@ void IRAM_ATTR leo_muestras(void *arg)
 
 void IRAM_ATTR guarda_datos(void *arg)
 {
-        //uint32_t cont_pos_lectura;
         char archivo[40]; // Para guardar el nombre del archivo
 
         while (1) {
                 if( xSemaphore_guardatabla != NULL ) { //Chequea que el semáforo esté inicializado
-
                         if( xSemaphoreTake( xSemaphore_guardatabla, portMAX_DELAY ) == pdTRUE ) //Si se guardó una tabla de datos se libera el semáforo
                         {
-
                                 if( xSemaphore_mutex_archivo != NULL ) { //Chequea que el semáforo esté inicializado
                                         if( xSemaphoreTake( xSemaphore_mutex_archivo, portMAX_DELAY ) == pdTRUE ) {
 
@@ -135,7 +135,6 @@ void IRAM_ATTR guarda_datos(void *arg)
 /// DETECTAMOS SI HAY QUE EMPEZAR UN ARCHIVO NUEVO, LO CREAMOS Y LO ABRIMOS /////////////////////////////////////////////////////
 
                                                 if (Datos_muestreo.nro_tabla == 0) { // Inicio un archivo nuevo
-                                                        uint32_t nro_de_muestra_inicial = muestra_inicial_archivo;
                                                         sprintf(archivo, MOUNT_POINT "/%d-%d.dat", Datos_muestreo.nro_muestreo, Datos_muestreo.nro_archivo );
                                                         Datos_muestreo.nro_archivo++; // El proxímo archivo tendrá otro número
                                                         //       FILE *f_samples = fopen(archivo, "a");
@@ -148,11 +147,8 @@ void IRAM_ATTR guarda_datos(void *arg)
 
               #ifdef ARCHIVOS_CON_ENCABEZADO
                                                                 fprintf(f_samples,"Timestamp_inicio_muestreo: %lld\n", Datos_muestreo.epoch_inicio);
-                                                                fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %u\n",nro_de_muestra_inicial);
-//                                                                fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %u\n",Datos_muestreo.nro_muestra_total_muestreo - (MUESTRAS_POR_SEGUNDO*MUESTRAS_POR_TABLA));
+                                                                fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %u\n",muestra_inicial_archivo);
                                                                 fprintf(f_samples,"Muestras_por_segundo: %d\n",MUESTRAS_POR_SEGUNDO);
-
-
               #endif
                                                         }
                                                 }
@@ -186,12 +182,11 @@ void IRAM_ATTR guarda_datos(void *arg)
                                                 }
 
 
+                                                aux_primer_muestra=true;
 
                                                 xSemaphoreGive( xSemaphore_mutex_archivo ); // Habilito que otro use el archivo
                                         }
                                 } //Chequea que el semáforo de archivo esté inicializado
-
-
                         }
                 }
         } //while(1)

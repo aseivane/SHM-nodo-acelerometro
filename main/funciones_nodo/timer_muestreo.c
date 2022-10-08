@@ -99,6 +99,7 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                 //         LED=0;
                 //         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
                 // }
+
                 Datos_muestreo.nro_muestra_total_muestreo++;  // Contador de muestras totales en el muestreo.
                 xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
 
