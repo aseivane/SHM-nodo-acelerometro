@@ -90,6 +90,10 @@ void app_main(void)
         esp_log_level_set("MENSAJES_MQTT ", ESP_LOG_INFO );
         esp_log_level_set("TICTOC ", ESP_LOG_ERROR );
         esp_log_level_set("HTTP_FILE_SERVER ", ESP_LOG_ERROR );
+        esp_log_level_set("VARIAS ", ESP_LOG_ERROR );
+
+
+
 
         /* Valores posibles
            ESP_LOG_NONE → No log output

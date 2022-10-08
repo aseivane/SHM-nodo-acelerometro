@@ -30,6 +30,8 @@ extern TicTocData * ticTocData;
 
 static const char *TAG = "TAREAS "; // Para los mensajes del micro
 
+uint32_t muestra_inicial_archivo = 0;
+
 void IRAM_ATTR leo_muestras(void *arg)
 {
         inicializacion_mpu6050();
@@ -46,6 +48,8 @@ void IRAM_ATTR leo_muestras(void *arg)
                 if( xSemaphore_tomamuestra != NULL )
                 {
                         if( xSemaphoreTake( xSemaphore_tomamuestra, portMAX_DELAY) == pdTRUE ) {  // El semaforo se libera a la frecuencia de muestreo
+
+
 
 
                                 if (LED == 0) {
@@ -74,6 +78,11 @@ void IRAM_ATTR leo_muestras(void *arg)
                                 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// DETECTAMOS SI SE LLENÓ LA TABLA  ////////////////////////////////////////////////////////////////////////////////////////////
+
+                                if(Datos_muestreo.nro_muestra_en_seg==0 && Datos_muestreo.nro_tabla == 0) { // Si es la primer muestra del archivo
+                                        muestra_inicial_archivo = Datos_muestreo.nro_muestra_total_muestreo;
+                                }
+
                                 Datos_muestreo.nro_muestra_en_seg++;
 
                                 if (Datos_muestreo.nro_muestra_en_seg == MUESTRAS_POR_TABLA) { // Si llené una tabla paso a la siguiente, y habilito su almacenamiento.
@@ -113,10 +122,6 @@ void IRAM_ATTR guarda_datos(void *arg)
                                 if( xSemaphore_mutex_archivo != NULL ) { //Chequea que el semáforo esté inicializado
                                         if( xSemaphoreTake( xSemaphore_mutex_archivo, portMAX_DELAY ) == pdTRUE ) {
 
-
-
-
-
                                                 // if (LED == 0) {
                                                 //         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
                                                 //         LED=1;
@@ -130,6 +135,7 @@ void IRAM_ATTR guarda_datos(void *arg)
 /// DETECTAMOS SI HAY QUE EMPEZAR UN ARCHIVO NUEVO, LO CREAMOS Y LO ABRIMOS /////////////////////////////////////////////////////
 
                                                 if (Datos_muestreo.nro_tabla == 0) { // Inicio un archivo nuevo
+                                                        uint32_t nro_de_muestra_inicial = muestra_inicial_archivo;
                                                         sprintf(archivo, MOUNT_POINT "/%d-%d.dat", Datos_muestreo.nro_muestreo, Datos_muestreo.nro_archivo );
                                                         Datos_muestreo.nro_archivo++; // El proxímo archivo tendrá otro número
                                                         //       FILE *f_samples = fopen(archivo, "a");
@@ -142,8 +148,11 @@ void IRAM_ATTR guarda_datos(void *arg)
 
               #ifdef ARCHIVOS_CON_ENCABEZADO
                                                                 fprintf(f_samples,"Timestamp_inicio_muestreo: %lld\n", Datos_muestreo.epoch_inicio);
-                                                                fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %d\n",Datos_muestreo.nro_muestra_total_muestreo - (MUESTRAS_POR_SEGUNDO*MUESTRAS_POR_TABLA));
+                                                                fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %u\n",nro_de_muestra_inicial);
+//                                                                fprintf(f_samples,"Numero_de_muestra_inicial_del_archivo: %u\n",Datos_muestreo.nro_muestra_total_muestreo - (MUESTRAS_POR_SEGUNDO*MUESTRAS_POR_TABLA));
                                                                 fprintf(f_samples,"Muestras_por_segundo: %d\n",MUESTRAS_POR_SEGUNDO);
+
+
               #endif
                                                         }
                                                 }

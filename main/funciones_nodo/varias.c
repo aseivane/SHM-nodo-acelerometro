@@ -46,7 +46,7 @@ void resetea_muestreo(void){
         if( xSemaphore_mutex_archivo != NULL ) { //Chequea que el semáforo esté inicializado
                 if( xSemaphoreTake( xSemaphore_mutex_archivo, portMAX_DELAY ) == pdTRUE ) {
                         if (f_samples == NULL) {
-                                ESP_LOGE(TAG, "EL ARCHIVO NO ESTA ABIERTO. ERROR EN LA TARJETA");
+                                ESP_LOGI(TAG, "EL ARCHIVO NO ESTA ABIERTO.");
                         }
                         else {
                                 fflush(f_samples); // Vacio el buffer
