@@ -20,7 +20,7 @@
 
 #include "driver/sdmmc_host.h"
 
-const char *TAG = "SD_CARD";
+const char *TAG = "SD_CARD ";
 
 sdmmc_card_t* card;
 const char mount_point[] = MOUNT_POINT;

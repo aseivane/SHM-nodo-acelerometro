@@ -19,7 +19,7 @@ void inicializacion_timer_muestreo(int timer_idx, bool auto_reload, uint64_t val
 /*****************************************************************************
 * Definiciones
 *****************************************************************************/
-#define TIMER_DIVIDER         2 //  Hardware timer clock divider (2 es el valor mínimo)
+#define TIMER_DIVIDER         2 //  Hardware timer clock divider (2 es el valor mínimo), cuenta a 40MHz
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 
 #endif /* TIMER_MUESTREO_H_ */

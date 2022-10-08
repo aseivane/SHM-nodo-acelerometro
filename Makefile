@@ -3,6 +3,6 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := nodo
+PROJECT_NAME := NodoVialidad-actual
 
 include $(IDF_PATH)/make/project.mk

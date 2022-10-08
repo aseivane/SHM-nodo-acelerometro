@@ -1,1 +1,1 @@
-idf_component_register(SRCS "main.c" "tareas.c" "acelerometroI2C.c" "GPIO.c" "timer_muestreo.c" "sd_card.c" "microtime.c" "wifi.c" "tic-toc.c" "sic.c" "linearfit.c" "circularOrderedArray.c" "mqtt.c" INCLUDE_DIRS ".")
+idf_component_register(SRCS "main.c" "tareas.c" "acelerometroI2C.c" "GPIO.c" "timer_muestreo.c" "sd_card.c" "microtime.c" "wifi.c" "tic-toc.c" "sic.c" "linearfit.c" "circularOrderedArray.c" "mqtt.c" "mqtt_analisis.c" INCLUDE_DIRS ".")

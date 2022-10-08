@@ -5,6 +5,7 @@
  *	Contiene las funciones de manejo e inicializacion de la tarjeta SD
  */
 
+
 #ifndef MAIN_H_
 #define MAIN_H_
 
@@ -13,6 +14,21 @@
 #define TICTOC_PORT 8080                // Algoritmo de sincronismo
 #define EXAMPLE_ESP_WIFI_SSID "The Dude"
 #define EXAMPLE_ESP_WIFI_PASS "zarzaparrilla"
+
+
+#define CANT_BYTES_LECTURA 14    // Cantidad de bytes leidos del MPU6050 (aceletometro, temperatura, giroscopo)
+//#define CANT_BYTES_LECTURA 6    // Cantidad de bytes leidos del MPU6050 (solo acelerometro)
+
+#define MUESTRAS_POR_SEGUNDO 500
+#define MUESTRAS_POR_TABLA   500
+#define TABLAS_POR_ARCHIVO 60
+#define LONG_TABLAS MUESTRAS_POR_TABLA*CANT_BYTES_LECTURA
+#define GUARDA_DATOS_SD
+
+#define ARCHIVOS_CON_ENCABEZADO
+
+
+
 
 #include <stdio.h>
 //#include <sys/unistd.h>
@@ -61,6 +77,11 @@
 #include "mqtt.h"
 #include "tareas.h"
 
+typedef struct mentaje_t {
+   bool mensaje_nuevo;
+   char mensaje[100];
+} mensaje_t;
+
 /*****************************************************************************
 * Prototipos
 *****************************************************************************/
@@ -72,21 +93,15 @@ void extraccion_tarjeta_SD(void);
 /*****************************************************************************
 * Definiciones
 *****************************************************************************/
+
 #define MOUNT_POINT "/sdcard"
-
-#define CANT_BYTES_LECTURA 14    // Cantidad de bytes leidos del MPU6050 (aceletometro, temperatura, giroscopo)
-//#define CANT_BYTES_LECTURA 6    // Cantidad de bytes leidos del MPU6050 (solo acelerometro)
-
-#define MUESTRAS_POR_SEGUNDO 500
-#define MUESTRAS_POR_TABLA   500
-#define TABLAS_POR_ARCHIVO 60
-#define LONG_TABLAS MUESTRAS_POR_TABLA*CANT_BYTES_LECTURA
-#define GUARDA_DATOS_SD
-
 // DMA channel to be used by the SPI peripheral
 #ifndef SPI_DMA_CHAN
 #define SPI_DMA_CHAN    1
 #endif //SPI_DMA_CHAN
+
+
+
 
 
 

@@ -20,7 +20,7 @@
  ESP_LOG_DEBUG
  ESP_LOG_VERBOSE
 */
-static const char *TAG = "MPU6050 - ";
+static const char *TAG = "MPU6050 ";
 #include "esp_log.h"
 ///////////////////////////////////////////////////////////////////////////////
 

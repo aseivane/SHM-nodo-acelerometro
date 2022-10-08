@@ -6,13 +6,15 @@
  */
 
 #include "mqtt.h"
+#include "mqtt_analisis.h"
+
 
 const char* mqtt_server = IP_BROKER_MQTT;
 const int   mqttPort = PUERTO_MQTT;
 const char* mqttUser = USUARIO_MQTT;
 const char* mqttPassword = PASSWD_MQTT;
 
-static const char *TAG = "MQTT_CLIENT";
+static const char *TAG = "MQTT ";
 
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
@@ -40,19 +42,19 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 
         case MQTT_EVENT_SUBSCRIBED:
             ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-            msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             break;
+
         case MQTT_EVENT_UNSUBSCRIBED:
             ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
             break;
         case MQTT_EVENT_PUBLISHED:
             ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
             break;
-        case MQTT_EVENT_DATA:
+        case MQTT_EVENT_DATA:   // Cuando recibo un mensaje a un topic que estoy subcripto.
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-            printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-            printf("DATA=%.*s\r\n", event->data_len, event->data);
+            // printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+            // printf("DATA=%.*s\r\n", event->data_len, event->data);
+            analizar_mensaje_mqtt(event->topic,event->topic_len, event->data, event->data_len );
             break;
         case MQTT_EVENT_ERROR:
             ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -79,9 +81,11 @@ static void mqtt_app_start(void)
         .port = mqttPort,
     };
 
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
-    esp_mqtt_client_start(client);
+    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);  //   Creates mqtt client handle based on the configuration.
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);  // Registro el evento?
+    esp_mqtt_client_start(client);  // Starts mqtt client with already created client handle.
+    subscripciones(esp_mqtt_client_handle_t client)
+
 
 }
 
@@ -120,3 +124,17 @@ void inicio_mqtt(void){
 //
 //
 //   }
+
+
+
+
+/*
+
+// Para publicar
+msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
+ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+
+msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
+ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+*/

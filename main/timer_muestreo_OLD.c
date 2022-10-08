@@ -25,8 +25,6 @@ extern bool flag_tomar_muestra;
 extern bool flag_muestra_perdida;
 extern uint8_t LED;
 
-extern mensaje_t mensaje;
-
 /************************************************************************
 * Variables
 ************************************************************************/
@@ -61,71 +59,36 @@ uint64_t aux_t;
 
 void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 {
-
-        if(muestreando == true) {
-                // if (LED == 0) {
-                //         gpio_set_level(GPIO_OUTPUT_IO_0, 1);
-                //         LED=1;
-                // }
-                // else {
-                //         LED=0;
-                //         gpio_set_level(GPIO_OUTPUT_IO_0, 0);
-                // }
-                xSemaphoreGiveFromISR( xSemaphore_tomamuestra, NULL ); // Libero el semaforo de muestreo
-                if (flag_tomar_muestra == true) { // Si es true es porque no se leyó la muestra anterior.
-                        flag_muestra_perdida = true;
-                }
-                flag_tomar_muestra = true;
-                if (nro_muestra == 499) {
-                        if(ticTocReady(ticTocData)) {
-                                cont_segs_muestreo++;
-                                ttTime1 = ticTocTime(ticTocData);
-                                timer_set_alarm_value(TIMER_GROUP_0, 0, tiempo_inicio + cont_segs_muestreo*40000000L); // Setea la alarma para que la proxima interrupcion sea en el inicio.
-                                sprintf(mensaje.mensaje,"Tiempo_inicio: %lld   Inicio_prox:%lld", tiempo_inicio, tiempo_inicio + cont_segs_muestreo*40000000L );
-                                mensaje.mensaje_nuevo=true;
-                        }
-                }
-                else{
-                        timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
-                }
-
-
+        //static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        if (LED == 0) {
+                gpio_set_level(GPIO_OUTPUT_IO_0, 1);
+                LED=1;
         }
         else {
-                if (esperando_inicio == true) {
-                        if(ticTocReady(ticTocData)) {
-                                ttTime1 = ticTocTime(ticTocData);
-                                timer_set_alarm_value(TIMER_GROUP_0, 0, (tiempo_inicio - ttTime1)*40); // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
-
-                                sprintf(mensaje.mensaje,"Tiempo_inicio: %lld    tt_Time1:%lld  Tiempo_timer: %lld", tiempo_inicio, ttTime1,(tiempo_inicio - ttTime1)*40 );
-                                mensaje.mensaje_nuevo=true;
-
-                                cont_segs_muestreo = 0;
-                                muestreando = true; // En la proxima interrupcion empiezo a muestrear
-                                esperando_inicio = false; // Ya configuré el tiempo de inicio
-                                gpio_set_level(GPIO_OUTPUT_IO_0, 1);
-                        }
-                        else{
-                          timer_set_alarm_value(TIMER_GROUP_0, 0, (40000000/MUESTRAS_POR_SEGUNDO)); // Setea la alarma para que la proxima interrupcion sea en el inicio. (40 cuentas por us)
-
-                        }
-                }
+                LED=0;
+                gpio_set_level(GPIO_OUTPUT_IO_0, 0);
         }
 
 
 
+        ttTime1 = ticTocTime(ticTocData);
+
+        muestreando = true;
 
 
         /* Unblock the task by releasing the semaphore. */
 
-
+        xSemaphoreGiveFromISR( xSemaphore_tomamuestra, NULL );
 //        xSemaphoreGiveFromISR( xSemaphore_tomamuestra, &xHigherPriorityTaskWoken );
         /* Esto se usa para comprobar si se perdieron muestras */
-
+        if (flag_tomar_muestra == true){ // Si es true es porque no se leyó la muestra anterior.
+          flag_muestra_perdida = true;
+        }
+        flag_tomar_muestra = true;
 
         //   valor_interrupcion_timer = valor_interrupcion_timer + 40000; // Modifico el valor de cuenta de la alarma
+        timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
 
-        //    timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
 
         timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
         timer_group_enable_alarm_in_isr(TIMER_GROUP_0, TIMER_0);

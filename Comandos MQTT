@@ -11,7 +11,7 @@ Subscribirse:
 Publicar:
     mosquitto_pub -h BROKER -t TOPIC -m MENSAJE -u USUARIO -P PASSWORD
 
-Para agregar usuario:
+
      mosquitto_pub -h 192.168.0.5 -t /topic/qos0 -u usuario -P usuariopassword -m "MENSAJE"
    
    

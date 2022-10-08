@@ -5,7 +5,7 @@
  *      Author: jaatadia@gmail.com
  */
 #include <string.h>
-#include "main.h" // Hay definiciciones sobre el SSID y passwd del WIFI 
+#include "main.h" // Hay definiciciones sobre el SSID y passwd del WIFI
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -37,7 +37,7 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-static const char *TAG = "wifi station";
+static const char *TAG = "WIFI ";
 
 static int s_retry_num = 0;
 
