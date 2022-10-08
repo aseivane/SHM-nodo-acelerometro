@@ -49,7 +49,8 @@ void subscripciones(esp_mqtt_client_handle_t client);
 // Funciones de envío de mensajes
 void mensaje_mqtt_error(char * mensaje_error);
 void mensaje_mqtt_estado(void);
-void mensaje_confirmacion(bool inicio_fin);
+void mensaje_confirmacion(uint32_t nro);
+void mensaje_fin_muestreo(uint32_t nro);
 
 // Analisis de los mensajes
 

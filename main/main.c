@@ -36,14 +36,11 @@ SemaphoreHandle_t xSemaphore_guardatabla = NULL;
 SemaphoreHandle_t xSemaphore_mutex_archivo = NULL;
 
 uint8_t LED;
-
 mensaje_t mensaje_consola;
 muestreo_t Datos_muestreo;
-
 TicTocData * ticTocData;
 
 static const char *TAG = "MAIN "; // Para los mensajes del micro
-
 char id_nodo[20];
 volatile char dir_ip[20];
 
@@ -89,27 +86,16 @@ void app_main(void)
                 derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
         ESP_LOGI(TAG, "Identificación: %s", id_nodo);
 
-
         // Primero que nada me conecto a la red
         connectToWiFi();
 
-// Inicialización de Variables /////////
-        Datos_muestreo.selec_tabla_escritura = 0;
-        Datos_muestreo.selec_tabla_lectura = 0;
-        Datos_muestreo.nro_muestra_en_seg = 0;
-        Datos_muestreo.flag_tabla_llena = false;
-        Datos_muestreo.flag_tomar_muestra = false;
-        Datos_muestreo.flag_muestra_perdida = false;
-        Datos_muestreo.nro_archivo=0;
-        Datos_muestreo.nro_tabla_guardada=0;
-        Datos_muestreo.nro_tabla_enviada=0;
-        Datos_muestreo.int_contador_segundos=0;
-        Datos_muestreo.epoch_inicio=0;
-        Datos_muestreo.estado_muestreo=ESTADO_ESPERANDO_MENSAJE_DE_INICIO;
-        Datos_muestreo.cantidad_de_interrupciones_de_muestreo=0;
-        Datos_muestreo.cantidad_de_muestras_leidas=0;
 
-//        Datos_muestreo.estado_muestreo=ESTADO_MUESTREANDO;
+
+// Inicialización de Variables /////////
+        resetea_muestreo();
+        cerrar_archivo();
+
+
 
 // Creo los semaforos que voy a usar////////////////////////////////////////////
         xSemaphore_tomamuestra = xSemaphoreCreateBinary();
@@ -176,11 +162,6 @@ void app_main(void)
 
         mensaje_mqtt_estado(); // Al iniciar envía un mensaje de estado, que se puede usar para autocinfiguración de los nodos
 
-
-// Aparentemente esto no es necesario
-        // for(;;) {
-        //         vTaskDelay(1000 / portTICK_PERIOD_MS);
-        // }
 }
 
 

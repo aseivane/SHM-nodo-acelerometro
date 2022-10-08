@@ -223,6 +223,7 @@ void IRAM_ATTR guarda_datos(void *arg)
 /// DETECTAMOS SI HAY QUE EMPEZAR UN ARCHIVO NUEVO, LO CREAMOS Y LO ABRIMOS /////////////////////////////////////////////////////
 
                                                 if (Datos_muestreo.nro_tabla_guardada == 1) { // Inicio un archivo nuevo
+
                                                         sprintf(archivo, MOUNT_POINT "/%d-%d.dat", Datos_muestreo.nro_muestreo, Datos_muestreo.nro_archivo );
                                                         Datos_muestreo.nro_archivo++; // El proxímo archivo tendrá otro número
 
@@ -287,11 +288,20 @@ void IRAM_ATTR guarda_datos(void *arg)
 void muestra_info(void *arg)
 {
         while(1) {
+
+
                 if (mensaje_consola.mensaje_nuevo == true) {
                         mensaje_consola.mensaje_nuevo=false;
                         //printf(mensaje_consola.mensaje);
                         ESP_LOGI(TAG, "%s", mensaje_consola.mensaje );
                 }
+
+                if (Datos_muestreo.flag_fin_muestreo == true) {
+                        ESP_LOGI(TAG, "Enviando mendaje MQTT de fin de muestreo");
+                        Datos_muestreo.flag_fin_muestreo = false;
+                        mensaje_fin_muestreo(Datos_muestreo.nro_muestreo);
+                }
+
 
                 if (Datos_muestreo.flag_muestra_perdida == true) {
                         ESP_LOGE(TAG, "Muestra perdida.");
@@ -306,7 +316,18 @@ void muestra_info(void *arg)
                 }
 
 
-                ESP_LOGI(TAG, "DEBUG | Int= %u | Muestras= %u | Nro en seg= %u | Tabla= %d",buffer_cant_interrupciones, Datos_muestreo.cantidad_de_muestras_leidas, Datos_muestreo.nro_muestra_en_seg, Datos_muestreo.nro_tabla_guardada);
+                // struct timeval current_time2;
+                // gettimeofday(&current_time2, NULL);
+                // uint32_t epoch_test=current_time2.tv_sec;
+                //
+                // ESP_LOGI(TAG, "Hora leida: %d", epoch_test);
+                //
+                //
+                // int64_t tt12 = esp_timer_get_time();
+                // ESP_LOGI(TAG, "Hora get_time: %lld", tt12);
+                //
+
+//            ESP_LOGI(TAG, "DEBUG | Int= %u | Muestras= %u | Nro en seg= %u | Tabla= %d",buffer_cant_interrupciones, Datos_muestreo.cantidad_de_muestras_leidas, Datos_muestreo.nro_muestra_en_seg, Datos_muestreo.nro_tabla_guardada);
 
 
 //

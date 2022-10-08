@@ -9,36 +9,9 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#define TICTOC_SERVER "192.168.0.100"   // Algoritmo de sincronismo
-#define TICTOC_PORT 8080                // Algoritmo de sincronismo
-#define EXAMPLE_ESP_WIFI_SSID "The Dude"
-#define EXAMPLE_ESP_WIFI_PASS "zarzaparrilla"
+#include "configuraciones.h"
 
 
-// Configuracion del MQTT
-#define Id_NODO "nodo_vialidad"
-#define IP_BROKER_MQTT "192.168.0.10"
-#define PUERTO_MQTT 1883
-#define USUARIO_MQTT "usuario"
-#define PASSWD_MQTT  "usuariopassword"
-
-
-#define MUESTRA_DATOS_SINCRONIZACION
-//#define MUESTRA_ESTADISTICAS_CPU
-#define ARCHIVOS_CON_ENCABEZADO
-
-//#define SD_40MHZ  // Para mas velocidad en la tarjeta SD (default es 20MHz), a 20MHz es mas estable.
-
-
-/*
-* ------  CONFIGURACIONES DEL MUESTREO  --------
-*/
-#define CANT_BYTES_LECTURA 14    // Cantidad de bytes leidos del MPU6050 (aceletometro, temperatura, giroscopo)
-//#define CANT_BYTES_LECTURA 6    // Cantidad de bytes leidos del MPU6050 (solo acelerometro)
-#define MUESTRAS_POR_SEGUNDO 500
-#define MUESTRAS_POR_TABLA   500
-#define TABLAS_POR_ARCHIVO 60
-#define LONG_TABLAS MUESTRAS_POR_TABLA*CANT_BYTES_LECTURA
 
 
 #include <stdio.h>
@@ -118,21 +91,12 @@ typedef struct muestreo_t {
         bool flag_muestra_perdida;
         bool flag_tabla_llena;
         bool flag_tabla_perdida;
+        bool flag_fin_muestreo;
         uint32_t cant_muestras_perdidas;  // Contador de muestras perdidas en una tabla.
         uint32_t cantidad_de_interrupciones_de_muestreo;
         uint32_t cantidad_de_muestras_leidas;
 }muestreo_t;
 
-/*****************************************************************************
-* Prototipos
-*****************************************************************************/
-
-// void inicializacion_tarjeta_SD(void);
-// void extraccion_tarjeta_SD(void);
-
-/*****************************************************************************
-* Definiciones
-*****************************************************************************/
 
 #define MOUNT_POINT "/sdcard"
 // DMA channel to be used by the SPI peripheral

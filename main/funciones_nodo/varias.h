@@ -10,5 +10,6 @@
 
 /*Prototipos*/
 void resetea_muestreo(void);
+void cerrar_archivo(void);
 
 #endif

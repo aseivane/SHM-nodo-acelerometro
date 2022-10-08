@@ -20,7 +20,7 @@
 #include "GPIO.h"
 #include "esp_attr.h"
 
-//#define MOSTRAR_MENSAJES
+#define AJUSTE_DE_HORA
 /************************************************************************
 * Variables externas
 ************************************************************************/
@@ -52,6 +52,19 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 
         case ESTADO_ESPERANDO_MENSAJE_DE_INICIO:    // Si estoy esperando el mensaje de inicio
                 timer_set_alarm_value(TIMER_GROUP_0, 0, valor_interrupcion_timer);
+
+#ifdef AJUSTE_DE_HORA
+                if(ticTocReady(ticTocData)) {
+                        int64_t ttTime_irq;
+                        ttTime_irq = ticTocTime(ticTocData);
+                        struct timeval current_time1;
+                        current_time1.tv_sec = ttTime_irq/1000000;
+                        current_time1.tv_usec = 0;
+                        settimeofday(&current_time1, NULL);
+                }
+#endif
+
+
                 break;
 
         case ESTADO_CONFIGURAR_ALARMA_INICIO_A:  // Configuro timer para que interrumpa un segundo antes del inicio
@@ -172,6 +185,7 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
                                         #ifdef MOSTRAR_MENSAJES
                                 sprintf(mensaje_consola.mensaje,"Fin de muestreo nro: %d | Interrupciones: %d | Muestras leidas: %d \n", Datos_muestreo.nro_muestreo, Datos_muestreo.cantidad_de_interrupciones_de_muestreo, Datos_muestreo.cantidad_de_muestras_leidas );
                                 mensaje_consola.mensaje_nuevo=true;
+                                Datos_muestreo.flag_fin_muestreo = true;
                                         #endif
                         }
 

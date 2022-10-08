@@ -32,6 +32,9 @@ const char Topic_Cancelacion_Muestreo[] = "control/cancelacion_muestreo";
 const char Topic_Peticion_estado[] = "control/estado";
 const char Topic_reiniciar[] = "control/reiniciar";
 const char Topic_borrarSD[] = "control/borrarSD";
+const char Topic_config_hora[] = "control/config_hora";
+
+
 
 //extern int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
 extern bool esperando_inicio;
@@ -70,7 +73,8 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
         // ESP_LOGI(TAG,"MENSAJE= %.*s ", mensaje_size, mensaje);
 
         if(strcmp(Topic_InicioMuestreo, topic_rcv)==0) {
-                resetea_muestreo(); // Reseteamos un muestreo en curso
+                resetea_muestreo();
+                cerrar_archivo();
                 ESP_LOGI(TAG, "Mensaje de inicio de muestreo recibido");
                 Datos_muestreo.epoch_inicio = atoll(args_rcv[0]);
                 Datos_muestreo.epoch_inicio = Datos_muestreo.epoch_inicio * 1000000; // Lo paso a microsegundos
@@ -85,11 +89,15 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 ESP_LOGI(TAG, "Tiempo de inicio: %llu ",Datos_muestreo.epoch_inicio);
                 ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
                 ESP_LOGI(TAG, "Numero de muestreo : %d ",Datos_muestreo.nro_muestreo);
+
+                mensaje_confirmacion(Datos_muestreo.nro_muestreo);
+
         }
 
         else if(strcmp(Topic_InicioMuestreo_async, topic_rcv)==0) {
 
-                resetea_muestreo(); // Reseteamos un muestreo en curso
+                resetea_muestreo();
+                cerrar_archivo();
                 ESP_LOGI(TAG, "Mensaje de inicio asincrónico de muestreo recibido");
 
                 Datos_muestreo.duracion_muestreo = atoi(args_rcv[0])*60;
@@ -98,6 +106,7 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
 
                 ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
                 ESP_LOGI(TAG, "Numero de muestreo : %d ",Datos_muestreo.nro_muestreo);
+                mensaje_confirmacion(Datos_muestreo.nro_muestreo);
 
         }
 
@@ -105,6 +114,7 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
         else if(strcmp(Topic_Cancelacion_Muestreo, topic_rcv)==0) {
                 ESP_LOGI(TAG, "Mensaje de cancelación de muestreo recibido");
                 resetea_muestreo();
+                cerrar_archivo();
         }
 
         else if(strcmp(Topic_Peticion_estado, topic_rcv)==0) {
@@ -126,8 +136,26 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 if(strcmp("0", args_rcv[0])==0 || strcmp(id_nodo, args_rcv[0])==0 ) {
                         ESP_LOGI(TAG, "Mensaje de borrado recibido");
                         borrar_datos_SD();
+                        ESP_LOGI(TAG, "Datos borrados");
                 }
         }
+
+        else if(strcmp(Topic_config_hora, topic_rcv)==0) {
+                if(strcmp("0", args_rcv[0])==0 || strcmp(id_nodo, args_rcv[0])==0 ) {
+
+                        struct timeval current_time1;
+                        current_time1.tv_sec = atoll(args_rcv[1]);
+                        current_time1.tv_usec = 0;
+                        settimeofday(&current_time1, NULL);
+                        ESP_LOGI(TAG, "Hora configurada: %lld", atoll(args_rcv[1]));
+                }
+        }
+
+
+
+
+
+
 }
 
 
@@ -233,30 +261,44 @@ void mensaje_mqtt_estado(void) {
 
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/estado", mensaje, 0, 1, 0, 1);
         ESP_LOGI(TAG, "Mensaje de estado publicado, msg_id=%d", msg_id);
+
 }
 
 void mensaje_mqtt_error(char * mensaje_error) {
         int msg_id;
-        msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/error", mensaje_error, 0, 1, 0, 1);
-
+        char mensaje[100];
+        sprintf(mensaje, "%s %s %s", id_nodo, dir_ip, mensaje_error);
+        msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/error", mensaje, 0, 1, 0, 1);
         ESP_LOGI(TAG, "Mensaje de error publicado, msg_id=%d", msg_id);
 }
 
-void mensaje_confirmacion(bool inicio_fin) {
+void mensaje_confirmacion(uint32_t nro) {
         int msg_id;
-        if(inicio_fin) {
-                msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/confirmacion", "INICIO_MUESTREO", 0, 1, 0, 1);
-        }
-        else{
-                msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/confirmacion", "FIN_MUESTREO", 0, 1, 0, 1);
-        }
-        ESP_LOGI(TAG, "Mensaje de confirmación publicado, msg_id=%d", msg_id);
+        char mensaje[100];
+
+        sprintf(mensaje, "%s %s %u", id_nodo, dir_ip, nro);
+        msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/confirmacion", mensaje, 0, 1, 0, 1);
+
+        ESP_LOGI(TAG, "Mensaje de confirmación de inicio publicado, msg_id=%d", msg_id);
 }
+
+void mensaje_fin_muestreo(uint32_t nro) {
+        int msg_id;
+        char mensaje[100];
+
+        sprintf(mensaje, "%s %s %u", id_nodo, dir_ip, nro);
+        msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/fin", mensaje, 0, 1, 0, 1);
+
+        ESP_LOGI(TAG, "Mensaje fin de muestreo publicado, msg_id=%d", msg_id);
+}
+
+
+
+
 
 void subscripciones(esp_mqtt_client_handle_t client){
 
         char topic_subscribe[MAX_TOPIC_LENGTH] = "";
-
 
         strcat(topic_subscribe, Topic_InicioMuestreo);
         esp_mqtt_client_subscribe(client, topic_subscribe, 0);
@@ -288,6 +330,10 @@ void subscripciones(esp_mqtt_client_handle_t client){
         ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
         strcpy(topic_subscribe, ""); // Limpio el string
 
+        strcat(topic_subscribe, Topic_config_hora);
+        esp_mqtt_client_subscribe(client, topic_subscribe, 0);
+        ESP_LOGI(TAG, "Subscripto %s", topic_subscribe);
+        strcpy(topic_subscribe, ""); // Limpio el string
 }
 
 
