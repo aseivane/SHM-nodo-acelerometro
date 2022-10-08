@@ -84,6 +84,7 @@ TicTocData * ticTocData;
 
 void app_main(void)
 {
+
 // Configuracion de los mensajes de log por el puerto serie
         esp_log_level_set("MAIN ", ESP_LOG_INFO );
         esp_log_level_set("MPU6050 ", ESP_LOG_ERROR );
@@ -142,10 +143,10 @@ void app_main(void)
 /* ------------------------------------------
    Una pausa al inicio
    --------------------------------------------- */
-        printf("ESPERANDO SEÑAL DE INICIO \n");
-        while (gpio_get_level(GPIO_INPUT_IO_0)) { // Freno todo hasta apretar un boton
-                esp_task_wdt_reset(); // Esto no detiene el WDT para el idle task que no llega a correr.
-        }
+        // printf("ESPERANDO SEÑAL DE INICIO \n");
+        // while (gpio_get_level(GPIO_INPUT_IO_0)) { // Freno todo hasta apretar un boton
+        //         esp_task_wdt_reset(); // Esto no detiene el WDT para el idle task que no llega a correr.
+        // }
 /* ------------------------------------------ */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
