@@ -173,6 +173,8 @@ void IRAM_ATTR guarda_datos(void *arg)
                                                 fwrite(Datos_muestreo.TABLA1, sizeof(uint8_t), sizeof(Datos_muestreo.TABLA1), f_samples);
                                         }
                                         fflush(f_samples); // Vacio el buffer
+//                                        fsync(f_samples); // Vacio el buffer
+
                                         Datos_muestreo.flag_tabla_llena = false;
 
                                         if (Datos_muestreo.nro_tabla > (TABLAS_POR_ARCHIVO-1)) { // Porque grabé en el archivo todas las tablas que tenia que guardar

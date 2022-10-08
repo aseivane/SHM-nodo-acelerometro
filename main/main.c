@@ -20,8 +20,6 @@
 #include "daemon.h"
 #include "microtime.h"
 
-
-
 #include "esp_timer.h"
 #include "esp_intr_alloc.h"
 #include "soc/soc.h"
@@ -54,39 +52,31 @@
 /************************************************************************
 * Variables Globales
 ************************************************************************/
-
-
 FILE *f_samples = NULL;
-
-uint8_t datos [CANT_BYTES_LECTURA];  // Lugar donde guardo los datos leidos del mpu
 
 SemaphoreHandle_t xSemaphore_tomamuestra = NULL;
 SemaphoreHandle_t xSemaphore_guardatabla = NULL;
 
-
 uint8_t LED;
 
-uint32_t dir_ticTocData;
 mensaje_t mensaje_consola;
+muestreo_t Datos_muestreo;
 
 int64_t tiempo_inicio;  // Epoch (UTC) resolucion en segundos
 
-muestreo_t Datos_muestreo;
+
+TicTocData * ticTocData;
 
 static const char *TAG = "MAIN "; // Para los mensajes del micro
 
-
+//////////////////////////////////////////////////////////////////
 /**
  * @brief Función main
  */
-TicTocData * ticTocData;
-
-//////////////////////////////////////////////////////////////////
-
-
-
 void app_main(void)
 {
+
+  //    ESP_ERROR_CHECK(esp_event_loop_create_default()); // Pare el http server
 
 // Configuracion de los mensajes de log por el puerto serie
         esp_log_level_set("MAIN ", ESP_LOG_INFO );
@@ -97,7 +87,9 @@ void app_main(void)
         esp_log_level_set("MQTT ", ESP_LOG_INFO );
         esp_log_level_set("MQTT_ANALISIS ", ESP_LOG_INFO );
         esp_log_level_set("TICTOC ", ESP_LOG_ERROR );
-        esp_log_level_set("TIMER ", ESP_LOG_ERROR );
+        esp_log_level_set("HTTP_FILE_SERVER ", ESP_LOG_ERROR );
+
+
 
 
         /* Valores posibles
@@ -144,12 +136,19 @@ void app_main(void)
         inicializacion_tarjeta_SD();
         inicio_mqtt();
 
+        /* Start the file server */
+        ESP_ERROR_CHECK(start_file_server("/sdcard"));
 
-////// Inicialización del algoritmo de Javier  /////////////////////////
-        TicTocData* ticTocData = malloc(sizeof(TicTocData));
-        setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);
-////////////////////////////////////////////////////////////////////////
+// ////// Inicialización del algoritmo de Javier  /////////////////////////
+//         TicTocData* ticTocData = malloc(sizeof(TicTocData));
+//         setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);
+// ////////////////////////////////////////////////////////////////////////
 
+
+/* ALGORITMO DE SINCRONISMO*/
+TicTocData * ticTocData1 = malloc(sizeof(TicTocData)); /* ALGORITMO DE SINCRONISMO*/
+ticTocData = ticTocData1;  /* ALGORITMO DE SINCRONISMO*/
+setupTicToc(ticTocData, TICTOC_SERVER, TICTOC_PORT);  /* ALGORITMO DE SINCRONISMO*/
 
 /* ------------------------------------------
    Una pausa al inicio

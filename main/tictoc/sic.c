@@ -1,7 +1,7 @@
 #include "sic.h"
 #include "halfSampleMode.h"
 #include <stdio.h>
-#include <inttypes.h>	
+#include <inttypes.h>
 
 //#define TICTOC_SIC_DEBUG
 
@@ -16,9 +16,9 @@ void calculateLinearFit(SicData* sic);
 ***********************************/
 // TODO extract this to its own module
 
-struct WmNode { 
+struct WmNode {
 	int64_t cmp; // This value will be used to order the array
-	int64_t phi; 
+	int64_t phi;
     int64_t time;
 };
 
@@ -72,7 +72,7 @@ void sicInit(SicData* sic) {
 	sicReset(sic);
 	sic->state = NO_SYNC;
     sic->actual_m = 0;
-    sic->actual_c = 0;	
+    sic->actual_c = 0;
 }
 
 // reset internal information without discarding current estimation paramenters.
@@ -91,13 +91,13 @@ void sicStepTimeout(SicData* sic){
 	sic->to++;
 	//If the amount of timeouted requests reached the threshold we restart the algorithm.
 	if(sic->to == MAX_to){
-		if(sic->state == NO_SYNC) { 
+		if(sic->state == NO_SYNC) {
 			sicReset(sic);
 			sic->state = NO_SYNC;
 			#ifdef TICTOC_SIC_DEBUG
 			printf("SIC - Restarting NO_SYNC state.\n");
 			#endif
-		} else { 
+		} else {
 			//If we have already an actual_m and actual_c we want to keep them
 			sicReset(sic);
 			sic->state = RE_SYNC;
@@ -118,25 +118,25 @@ void sicStep(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4) {
 	// If we filled the sample array for the first time or one minute has passed since the last estimation we get a new estimation of phi
 	if(((sic->state == NO_SYNC || sic->state == RE_SYNC) && sic->syncSteps == STARTUP_CYCLES) ||
 		(sic->state == SYNC && sic->syncSteps == P)){
-		
+
 		calculateLinearFit(sic);
 		sic->state = SYNC;
 		sic->syncSteps = 0;
 		#ifdef TICTOC_SIC_DEBUG
 		printf("SIC - SYNC state: new m: %f c: %f.\n", sic->actual_m, sic->actual_c);
 		#endif
-	} 
+	}
 }
 
 
 // Calculates phi and inserts it in the corresponding arrays
-void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){	
+void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4){
 	WmNode node;
-	
+
 	node.phi = (t1 - t2 - N * t3 + N * t4)/(N+1);
 	node.cmp = node.phi;
 	node.time = (t1+t4)/2;
-		
+
 	// Insert the latest sample
 	insertOrdered(sic->Wm, &node);
 
@@ -146,13 +146,13 @@ void updateSamples(SicData* sic, int64_t t1, int64_t t2, int64_t t3, int64_t t4)
 		halfSampleModeWindow(sic->Wm, 0, sic->Wm->size, getCmp, MODE_WINDOW, &hsmResult);
 
 		for(int i=hsmResult.position1; i<hsmResult.position2; i++){
-			WmNode node;	
+			WmNode node;
 			node.phi = getPhi(sic->Wm, i);
 			node.cmp = getCmp(sic->Wm, i);
 			node.time = getTime(sic->Wm, i);
 			insertOrdered(sic->Wmode, &node);
 		}
-	}	
+	}
 }
 
 // Combines the old and the new value using the given alpha factor.
@@ -163,26 +163,38 @@ double ponderate(double previousValue, double newValue) {
 // Uses the current data to estimate the phi parameters.
 void calculateLinearFit(SicData* sic){
 	LinearFitResult result;
-	linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result); 
+	linearFit(sic->Wmode, 0, sic->Wmode->size, getTimeDouble, getPhiDouble, &result);
 
 	if(sic->state == SYNC){
 		sic->actual_m = ponderate(sic->actual_m, result.m);
-		sic->actual_c = ponderate(sic->actual_c, result.c);	
+		sic->actual_c = ponderate(sic->actual_c, result.c);
 	} else {
 		sic->actual_m = result.m;
-		sic->actual_c = result.c;	
+		sic->actual_c = result.c;
 	}
-	
+
 }
 
-int sicTimeAvailable(SicData* sic){
+int IRAM_ATTR sicTimeAvailable(SicData* sic){
 	return sic->state > NO_SYNC;
 }
 
-int64_t computePhi(SicData* sic, int64_t systemClock){
+int64_t IRAM_ATTR computePhi(SicData* sic, int64_t systemClock){
 	return (int64_t)(systemClock*sic->actual_m + sic->actual_c);
 }
 
-int64_t sicTime(SicData* sic, int64_t systemClock){
+int64_t IRAM_ATTR sicTime(SicData* sic, int64_t systemClock){
 	return systemClock - computePhi(sic, systemClock);
 }
+
+// int sicTimeAvailable(SicData* sic){
+// 	return sic->state > NO_SYNC;
+// }
+//
+// int64_t computePhi(SicData* sic, int64_t systemClock){
+// 	return (int64_t)(systemClock*sic->actual_m + sic->actual_c);
+// }
+//
+// int64_t sicTime(SicData* sic, int64_t systemClock){
+// 	return systemClock - computePhi(sic, systemClock);
+// }

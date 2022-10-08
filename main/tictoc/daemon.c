@@ -5,6 +5,7 @@
  *      Author: jaatadia@gmail.com
  */
 #include "daemon.h"
+#include "../main.h"
 
 #include <stdio.h>
 
@@ -15,7 +16,9 @@
 #include "esp_timer.h"
 #include <inttypes.h>
 
-#define TICTOC_DAEMON_DEBUG
+//#define TICTOC_DAEMON_DEBUG
+
+static const char *TAG = "TICTOC "; // Para los mensajes del micro
 
 //#define DAEMON_SERVER
 
@@ -37,7 +40,7 @@ void printRemainingStack(const char* identifier){
 
 	for(int i = 0; i < uxArraySize; i++) {
 		if(strcmp("TicTocDaemon", pxTaskStatusArray[i].pcTaskName) == 0){
-			printf("%s - task %s: remaining stack higher mark %u (bytes)\n", identifier, pxTaskStatusArray[i].pcTaskName, pxTaskStatusArray[i].usStackHighWaterMark);
+			ESP_LOGE(TAG, "%s - task %s: remaining stack higher mark %u (bytes)\n", identifier, pxTaskStatusArray[i].pcTaskName, pxTaskStatusArray[i].usStackHighWaterMark);
 			break;
 		}
 	}
@@ -46,29 +49,32 @@ void printRemainingStack(const char* identifier){
 } */
 
 /* **************************************************
-*	
+*
 *                 Server Daemon
-*	
+*
 **************************************************** */
 
 int setupServerConnection() {
 	int socketfd;
-	if ( (socketfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
-		perror("Failed to create socket"); 
-		exit(EXIT_FAILURE); 
-	} 
+	if ( (socketfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+//		perror("Failed to create socket");
+		ESP_LOGE(TAG, "Failed to create socket");
+
+		exit(EXIT_FAILURE);
+	}
 
 	struct sockaddr_in servaddr;
-	memset(&servaddr, 0, sizeof(servaddr)); 
-	servaddr.sin_family = AF_INET; // IPv4 
-	servaddr.sin_addr.s_addr = INADDR_ANY; 
-	servaddr.sin_port = htons(8080); 
-	
-	if (bind(socketfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 ) 
-	{ 
-		perror("Failed to bind socket"); 
-		exit(EXIT_FAILURE); 
-	} 
+	memset(&servaddr, 0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET; // IPv4
+	servaddr.sin_addr.s_addr = INADDR_ANY;
+	servaddr.sin_port = htons(8080);
+
+	if (bind(socketfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 )
+	{
+//		perror("Failed to bind socket");
+		ESP_LOGE(TAG, "Failed to bind socket");
+		exit(EXIT_FAILURE);
+	}
 	return socketfd;
 }
 
@@ -86,24 +92,27 @@ void receiveTimeStamps(void * parameter) {
 		if(recvfrom(ticTocData->socketfd, (int32_t *) timestamps, incomingSize, MSG_WAITALL, (struct sockaddr*) &bufferData.cliaddr, &cliadrrSize) > 0){
 			encodeEpochInMicros(esp_timer_get_time(), timestamps, 2);
 
-			#ifdef TICTOC_DAEMON_DEBUG
-			if(*(ticTocData->timeRequest) != -1) {
-				printf("TicTocDaemon ---------------- timeRequested: %"PRId64"-------------------.\n", *(ticTocData->timeRequest));
-				*(ticTocData->timeRequest) = -1;
-			}
-			#endif
+			// #ifdef TICTOC_DAEMON_DEBUG
+			// if(*(ticTocData->timeRequest) != -1) {
+			// 	ESP_LOGI(TAG, "TicTocDaemon ---------------- timeRequested: %"PRId64"-------------------.\n", *(ticTocData->timeRequest));
+			//
+			// 	*(ticTocData->timeRequest) = -1;
+			// }
+			// #endif
 
-			printf("TicTocDaemon - received t1: %"PRId64".\n", decodeEpochInMicros(timestamps,0));
+			ESP_LOGI(TAG, "TicTocDaemon - received t1: %"PRId64".\n", decodeEpochInMicros(timestamps,0));
 
 			//char buffer[INET_ADDRSTRLEN];
 			//inet_ntop(AF_INET, &bufferData.cliaddr, buffer, sizeof( buffer ));
-			//printf("will send to %s\n", buffer);
+			//ESP_LOGE(TAG, "will send to %s\n", buffer);
 			UBaseType_t res = xRingbufferSend(ticTocData->buf_handle, &bufferData, sizeof(bufferData), pdMS_TO_TICKS(1000));
 			//if (res != pdTRUE) {
-			//  printf("Failed to send item\n");
+			//  ESP_LOGE(TAG, "Failed to send item\n");
 			//}
 		}
 	}
+	vTaskDelete(NULL);
+
 }
 
 
@@ -116,7 +125,7 @@ void provideTimeStamps(void * parameter) {
 	    if (item != NULL) {
 	    	//char buffer[INET_ADDRSTRLEN];
 	    	//inet_ntop(AF_INET, &item->cliaddr, buffer, sizeof( buffer ));
-	    	//printf("Sending to %s\n", buffer);
+	    	//ESP_LOGE(TAG, "Sending to %s\n", buffer);
 	    	encodeEpochInMicros(esp_timer_get_time(), item->timestamps, 4);
 	    	sendto(ticTocData->socketfd, (const int32_t *)item->timestamps, outGoingSize, 0, (const struct sockaddr *) &(item->cliaddr), sizeof(item->cliaddr));
 	        vRingbufferReturnItem(ticTocData->buf_handle, (void *)item);
@@ -126,9 +135,9 @@ void provideTimeStamps(void * parameter) {
 }
 
 /* **************************************************
-*	
+*
 *                 Client Daemon
-*	
+*
 **************************************************** */
 
 void setupServerAddr(struct sockaddr_in * servaddr, const char * serverIp, int serverPort) {
@@ -183,33 +192,31 @@ void getTimeStamps(void * parameter){
 		for(;;) {
 			loopCount++;
 
-			#ifdef TICTOC_DAEMON_DEBUG
-			if(*(ticTocData->timeRequest) != -1) {
-				printf("TicTocDaemon - timeRequested:%"PRId64" tictocTime:%"PRId64".\n",
-						*(ticTocData->timeRequest),
-						ticTocReady(ticTocData) ? sicTime(&ticTocData->sicdata, *(ticTocData->timeRequest)) : 0);
-				*(ticTocData->timeRequest) = -1;
-			}	
-			#endif
+			// #ifdef TICTOC_DAEMON_DEBUG
+			// if(*(ticTocData->timeRequest) != -1) {
+			// 	printf("TicTocDaemon - timeRequested:%"PRId64" tictocTime:%"PRId64".\n",
+			// 			*(ticTocData->timeRequest),
+			// 			ticTocReady(ticTocData) ? sicTime(&ticTocData->sicdata, *(ticTocData->timeRequest)) : 0);
+			// 	*(ticTocData->timeRequest) = -1;
+			// }
+			// #endif
 
 			if(getStamps(ticTocData->sock, (const struct sockaddr *) &servaddr, servaddrSize, resultArray)){
 				if (loopCount > 10) {
-					#ifdef TICTOC_DAEMON_DEBUG
-					printf("TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
-					#endif
-					sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);	
+					ESP_LOGI(TAG, "TicTocDaemon %lld - t1:%"PRId64" t2:%"PRId64" t3:%"PRId64" t4:%"PRId64"\n", loopCount, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
+					sicStep(&ticTocData->sicdata, resultArray[0], resultArray[1], resultArray[2], resultArray[3]);
 				}
 
 			} else {
-				#ifdef TICTOC_DAEMON_DEBUG
-				printf("TicTocDaemon timeout\n");
-				#endif
+				ESP_LOGE(TAG, "TicTocDaemon timeout\n");
 				sicStepTimeout(&ticTocData->sicdata);
 			}
 
 			// Pause the task for TIC_TOC_PERIOD ms
 			vTaskDelay(TIC_TOC_PERIOD / portTICK_PERIOD_MS);
 		}
+		vTaskDelete(NULL);
+
 }
 
 
@@ -217,16 +224,17 @@ void setupTicTocClient(TicTocData* ticToc, const char * serverIp, int serverPort
 	sicInit(&ticToc->sicdata);
 	int sockfd;
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
-		perror("socket creation failed");
+		//perror("socket creation failed");
+		ESP_LOGE(TAG, "socket creation failed");
 		return;
 	}
-	
+
 	//read timeout
 	struct timeval tv;
 	tv.tv_sec = 0;
 	tv.tv_usec = 800000; // 0.8 seconds
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const struct timeval*)&tv, sizeof(tv));
-	
+
 
 	ticToc->sock=sockfd;
 	ticToc->serverIp = serverIp;
@@ -236,12 +244,15 @@ void setupTicTocClient(TicTocData* ticToc, const char * serverIp, int serverPort
 			// Function that should be called
 			getTimeStamps,
 		    "TicTocDaemon",				// Name of the task (for debugging)
-		    4000,						// Stack size (bytes)
+		    1024 * 8,						// Stack size (bytes)
 		    ticToc,						// Parameter to pass
 			TIC_TOC_DAEMON_PRIORITY,	// Task priority
 		    NULL,             			// Task handle
-			1						    // Execution Core
+			0						    // Execution Core
 		  );
+
+	ESP_LOGI(TAG, "Cliente inicializado");
+
 }
 
 void setupTicTocServer(TicTocData* ticToc){
@@ -249,7 +260,7 @@ void setupTicTocServer(TicTocData* ticToc){
 	 //Create ring buffer
 	ticToc->buf_handle = xRingbufferCreate(sizeof(BufferData) * 20, RINGBUF_TYPE_NOSPLIT);
 	if (ticToc->buf_handle == NULL) {
-		printf("Failed to create ring buffer\n");
+		ESP_LOGE(TAG, "Failed to create ring buffer\n");
 	}
 
 	ticToc->socketfd = setupServerConnection();
@@ -280,10 +291,14 @@ void setupTicTocServer(TicTocData* ticToc){
 void setupTicToc(TicTocData* ticToc, const char * serverIp, int serverPort)
 {
 	#ifdef DAEMON_SERVER
+	ESP_LOGI(TAG, "Inicializando en modo server");
 	setupTicTocServer(ticToc);
 	#else
+	ESP_LOGI(TAG, "Inicializando en modo cliente");
 	setupTicTocClient(ticToc, serverIp, serverPort);
 	#endif
+	ESP_LOGI(TAG, "TICTOC inicializado");
+
 }
 
 int IRAM_ATTR ticTocReady(TicTocData * ticTocData){

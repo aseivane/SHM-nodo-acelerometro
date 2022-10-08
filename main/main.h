@@ -59,6 +59,8 @@
 #include "acelerometroI2C.h"
 #include "GPIO.h"
 #include "timer_muestreo.h"
+#include "file_server.h"
+
 
 #include "esp_vfs_fat.h"
 #include "driver/sdspi_host.h"

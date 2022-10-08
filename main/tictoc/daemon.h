@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/ringbuf.h"
+#include "esp_attr.h"
 
 #define TIC_TOC_DAEMON_PRIORITY 1
 #define TIC_TOC_PERIOD 1000

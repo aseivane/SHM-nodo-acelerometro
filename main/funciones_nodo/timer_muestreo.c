@@ -13,9 +13,9 @@
 #include "../main.h"
 #include "../tictoc/daemon.h"
 #include "esp_log.h"
-#include "driver/i2c.h"
-#include "sdkconfig.h"
-#include "driver/timer.h"
+//#include "driver/i2c.h"
+//#include "sdkconfig.h"
+//#include "driver/timer.h"
 #include "timer_muestreo.h"
 #include "GPIO.h"
 #include "esp_attr.h"
@@ -43,9 +43,6 @@ volatile uint64_t valor_interrupcion_timer;
 extern TicTocData * ticTocData;
 
 
-static const char *TAG = "TIMER "; // Para los mensajes del micro
-
-
 /**
  * @brief Handler de la interrupcion del Timer
  * El timer cuenta a 40MHz
@@ -69,12 +66,20 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
         // prueba = ticTocReady(ticTocData);
 
         if(ticTocReady(ticTocData)) {
-          sprintf(mensaje_consola.mensaje,"TICTOC;READY");
-          mensaje_consola.mensaje_nuevo=true;
+                int64_t ttTime_irq;
+                ttTime_irq = ticTocTime(ticTocData);
 
+                sprintf(mensaje_consola.mensaje,"TICTOC READY - Hora: %lld \n", ttTime_irq);
+                mensaje_consola.mensaje_nuevo=true;
         }
-          // sprintf(mensaje_consola.mensaje,"Mensajes, funcionan");
-          // mensaje_consola.mensaje_nuevo=true;
+        else{
+                int64_t ttTime_irq;
+                ttTime_irq = ticTocTime(ticTocData);
+
+                sprintf(mensaje_consola.mensaje,"TICTOC NOT READY - Hora: %lld \n", ttTime_irq);
+                mensaje_consola.mensaje_nuevo=true;
+        }
+
 
 
 

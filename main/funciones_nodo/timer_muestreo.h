@@ -9,17 +9,18 @@
 #define TIMER_MUESTREO_H_
 
 /*****************************************************************************
+* Definiciones
+*****************************************************************************/
+#define TIMER_DIVIDER         2 //  Hardware timer clock divider (2 es el valor mínimo), cuenta a 40MHz
+#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
+
+
+/*****************************************************************************
 * Prototipos
 *****************************************************************************/
 
 void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr);
 void inicializacion_timer_muestreo(int timer_idx, bool auto_reload, uint64_t valor_max_conteo);
 
-
-/*****************************************************************************
-* Definiciones
-*****************************************************************************/
-#define TIMER_DIVIDER         2 //  Hardware timer clock divider (2 es el valor mínimo), cuenta a 40MHz
-#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 
 #endif /* TIMER_MUESTREO_H_ */
