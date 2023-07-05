@@ -21,7 +21,6 @@
 
 #define TICTOC_SERVER "192.168.0.50"   // Ip del servidor de sincronismo
 
-
 // Configuracion del MQTT
 #define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
 #define PUERTO_MQTT 1883                //puerto del MQTT

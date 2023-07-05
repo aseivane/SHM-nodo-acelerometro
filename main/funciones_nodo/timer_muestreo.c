@@ -20,6 +20,14 @@
 #include "GPIO.h"
 #include "esp_attr.h"
 
+//#include "esp_cpu.h"
+
+#include "esp_system.h"
+
+
+
+static const char *TAG = "TIMER_MUESTREO "; // Para los mensajes del micro
+
 /************************************************************************
 * Variables externas
 ************************************************************************/
@@ -45,6 +53,21 @@ extern TicTocData * ticTocData;
  */
 void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 {
+
+ // int core_id;
+ // core_id = xPortGetCoreID();
+ // sprintf(mensaje_consola.mensaje,"Interrupción ejecutada núcleo %d\n", core_id );
+ // mensaje_consola.mensaje_nuevo=true;
+
+  // if (LED == 0) {
+  //         gpio_set_level(LED_1, 1);
+  //         LED=1;
+  // }
+  // else {
+  //         LED=0;
+  //         gpio_set_level(LED_1, 0);
+  // }
+
         static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
         switch (Datos_muestreo.estado_muestreo) {
@@ -193,8 +216,6 @@ void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr)
 
         }
 
-
-
 // Si está sincronizado prendemos el LED verde y ponemos en hora el reloj local
         if(ticTocReady(ticTocData)) {
                 gpio_set_level(LED_2, 1);
@@ -259,4 +280,28 @@ void inicializacion_timer_muestreo(int timer_idx, bool auto_reload, uint64_t val
                            (void *) timer_idx, ESP_INTR_FLAG_IRAM, NULL);
 
         timer_start(TIMER_GROUP_0, timer_idx);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// TAREA QUE ENVÍA MENSAJES SIN BLOQUEAR   /////////////////////////////////////////////////////////////////////////////////////
+
+void tarea_timer_muestreo(void *arg)
+{
+
+  // La interrupcion la inicializo al final
+          int timer_muestreo_idx = 0;
+          ESP_LOGI(TAG, "INICIANDO TIMER");
+          inicializacion_timer_muestreo(timer_muestreo_idx, 1,(40000000/MUESTRAS_POR_SEGUNDO));
+
+
+        while(1) {
+
+          // int core_id_a;
+          // core_id_a = xPortGetCoreID();
+          // ESP_LOGI(TAG, "Tarea ejecutandose en núcleo: %d", core_id_a);
+
+                vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+        vTaskDelete(NULL); // Nunca se va a ejecutar
 }

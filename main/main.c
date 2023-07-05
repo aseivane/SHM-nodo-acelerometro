@@ -158,15 +158,17 @@ void app_main(void)
         TaskHandle_t Handle_guarda_datos = NULL;
         xTaskCreatePinnedToCore(guarda_datos, "guarda_datos", 1024 * 16, (void *)0, 9, &Handle_guarda_datos,0);
 
+        TaskHandle_t Handle_tarea_timer_muestreo = NULL;
+        xTaskCreatePinnedToCore(tarea_timer_muestreo, "tarea_timer_muestreo", 1024 * 16, (void *)0, 10, &Handle_tarea_timer_muestreo,1);
+
         // SOLO PARA DEBUGGING
         TaskHandle_t Handle_muestra_info = NULL;
         xTaskCreatePinnedToCore(muestra_info, "muestra_info", 1024 * 2, (void *)0, 1, &Handle_muestra_info,0);
 
-// La interrupcion la inicializo al final
-        int timer_muestreo_idx = 0;
-        ESP_LOGI(TAG, "INICIANDO TIMER");
-        inicializacion_timer_muestreo(timer_muestreo_idx, 1,(40000000/MUESTRAS_POR_SEGUNDO));
-
+// // La interrupcion la inicializo al final
+//         int timer_muestreo_idx = 0;
+//         ESP_LOGI(TAG, "INICIANDO TIMER");
+//         inicializacion_timer_muestreo(timer_muestreo_idx, 1,(40000000/MUESTRAS_POR_SEGUNDO));
 
         mensaje_mqtt_estado(); // Al iniciar envía un mensaje de estado, que se puede usar para autocinfiguración de los nodos
 

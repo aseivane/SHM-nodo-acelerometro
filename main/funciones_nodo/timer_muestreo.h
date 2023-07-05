@@ -20,6 +20,7 @@
 
 void IRAM_ATTR ISR_Handler_timer_muestreo(void *ptr);
 void inicializacion_timer_muestreo(int timer_idx, bool auto_reload, uint64_t valor_max_conteo);
+void tarea_timer_muestreo(void *arg);
 
 
 #endif /* TIMER_MUESTREO_H_ */
