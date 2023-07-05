@@ -44,7 +44,7 @@ void resetea_muestreo(void){
         Datos_muestreo.cant_muestras_perdidas=0;
         Datos_muestreo.cantidad_de_interrupciones_de_muestreo=0;
         Datos_muestreo.cantidad_de_muestras_leidas=0;
-
+        sprintf(Datos_muestreo.nombre_muestreo, "default");
 
 // Apago el LED
         LED=0;

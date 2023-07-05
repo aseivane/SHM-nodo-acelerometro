@@ -15,6 +15,8 @@
 
 #include "sd_card.h"
 
+
+
 const char *TAG = "SD_CARD "; // Para los mensajes de LOG
 
 sdmmc_card_t* card;
@@ -176,7 +178,51 @@ void leer_config_SD (void)
                                 //printf("Puerto MQTT: %d \n", datos_config.puerto_mqtt );
                         }
 
+                        if(strcmp("alias", comando)==0) {
+                                ESP_LOGI(TAG, "Alias del nodo configurado");
+                                strcpy(datos_config.alias,argumento);
+//                                strcpy(datos_config.wifi_password,argumento);
+                                // printf("Argumento %s \n", datos_config.wifi_password );
+                        }
+
                 }
+                fclose(f_config);
+                ESP_LOGI(TAG, "Archivo de configuracion config.txt cerrado");
+        }
+}
+
+
+// Funcion que no anda bien
+void cambiar_alias_SD (void)
+{
+        FILE *f_config;
+        char buffer[100];
+        char comando[100];
+        char argumento[100];
+
+        if ((f_config = fopen(MOUNT_POINT "/CONFIG.TXT", "r+")) == NULL) {
+                ESP_LOGI(TAG, "Error! opening config file");
+                // Program exits if the file pointer returns NULL.
+        }
+
+        else{
+                ESP_LOGI(TAG, "Archivo de configuracion config.txt abierto");
+                while (fgets(buffer, sizeof(buffer),f_config)) { // Leo una línea de archivo
+
+                        sscanf(buffer,"%s \" %[^\"]s", comando, argumento); // Separo comando y argumento
+
+                        if(strcmp("alias", comando)==0) {
+                                fseek(f_config, -(strlen(argumento)+strlen(comando)+4), SEEK_CUR);
+                                int espacios=0;
+                                for (espacios =0;espacios<strlen(argumento)+2+strlen(comando);){
+                                  fprintf(f_config," ");
+                                  espacios ++;
+                                }
+                                ESP_LOGI(TAG, "Alias del nodo guardado en SD - Argumento: %s, %d",argumento, strlen(argumento));
+                        }
+                }
+                fprintf(f_config,"\"%s\"","Alias Ramiro");
+
                 fclose(f_config);
                 ESP_LOGI(TAG, "Archivo de configuracion config.txt cerrado");
         }

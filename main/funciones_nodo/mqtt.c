@@ -74,8 +74,11 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 Datos_muestreo.epoch_inicio = atoll(args_rcv[0]);
                 Datos_muestreo.epoch_inicio = Datos_muestreo.epoch_inicio * 1000000; // Lo paso a microsegundos
                 Datos_muestreo.duracion_muestreo = atoi(args_rcv[1])*60;
-                Datos_muestreo.nro_muestreo = atoi(args_rcv[2]);
+//                Datos_muestreo.nro_muestreo = atoi(args_rcv[2]);
+                sprintf(Datos_muestreo.nombre_muestreo, args_rcv[2]);
                 Datos_muestreo.estado_muestreo = ESTADO_CONFIGURAR_ALARMA_INICIO_A;
+
+
                 //  Datos_muestreo.contador_segundos = 0; // Reinicio el contador de segundos
                 //  Datos_muestreo.nro_muestra_en_seg = 0;
                 //  Datos_muestreo.nro_muestra_total_muestreo = 0;
@@ -96,7 +99,9 @@ void analizar_mensaje_mqtt(char * topic, int topic_size, char * mensaje, int men
                 ESP_LOGI(TAG, "Mensaje de inicio asincrónico de muestreo recibido");
 
                 Datos_muestreo.duracion_muestreo = atoi(args_rcv[0])*60;
-                Datos_muestreo.nro_muestreo = atoi(args_rcv[1]);
+                //Datos_muestreo.nro_muestreo = atoi(args_rcv[1]);
+                sprintf(Datos_muestreo.nombre_muestreo, args_rcv[1]);
+
                 Datos_muestreo.estado_muestreo = ESTADO_MUESTREANDO_ASYNC;
 
                 ESP_LOGI(TAG, "Duracion del muestreo: %d ",Datos_muestreo.duracion_muestreo);
@@ -244,10 +249,10 @@ static void mqtt_app_start(void)
 void mensaje_mqtt_estado(void) {
         int msg_id;
 //  msg_id = esp_mqtt_client_publish(get_mqtt_client_handle(), "/topic/qos1", "data_3", 0, 1, 0);
-        char mensaje[100];
+        char mensaje[170];
         esp_wifi_sta_get_ap_info(&wifidata); //https://www.esp32.com/viewtopic.php?t=578
 
-        sprintf(mensaje, "%s %s %d nodo_acelerometro", id_nodo, dir_ip, wifidata.rssi);
+        sprintf(mensaje, "%s %s %s %d nodo_acelerometro", id_nodo, datos_config.alias, dir_ip, wifidata.rssi);
 
         if(ticTocReady(ticTocData)) {
                 int64_t ttTime_irq;
@@ -268,16 +273,23 @@ void mensaje_mqtt_estado(void) {
         }
 
         if(Datos_muestreo.estado_muestreo==ESTADO_ESPERANDO_MENSAJE_DE_INICIO) {
-          strncat(mensaje, " standby", 90);
+          strncat(mensaje, " standby no_muestreando 0", 90);
+
         }
         else if(Datos_muestreo.estado_muestreo==ESTADO_CONFIGURAR_ALARMA_INICIO_A || Datos_muestreo.estado_muestreo==ESTADO_CONFIGURAR_ALARMA_INICIO_B || Datos_muestreo.estado_muestreo==ESTADO_ESPERANDO_INICIO ){
-          strncat(mensaje, " esperando_hora_inicio", 90);
+          strncat(mensaje, " esperando_hora_inicio ", 90);
+          strncat(mensaje, Datos_muestreo.nombre_muestreo, 90);
+          char mensaje2[100];
+          sprintf(mensaje2, " %d",Datos_muestreo.duracion_muestreo);
+          strncat(mensaje, mensaje2, 90);
         }
         else{
-          strncat(mensaje, " muestreando", 90);
+          strncat(mensaje, " muestreando ", 90);
+          strncat(mensaje, Datos_muestreo.nombre_muestreo, 90);
+          char mensaje2[100];
+          sprintf(mensaje2, " %d",((Datos_muestreo.duracion_muestreo) - Datos_muestreo.int_contador_segundos));
+          strncat(mensaje, mensaje2, 90);
         }
-
-
 
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/estado", mensaje, 0, 1, 0, 1);
         ESP_LOGI(TAG, "Mensaje de estado publicado, msg_id=%d", msg_id);

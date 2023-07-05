@@ -79,8 +79,6 @@ void app_main(void)
            ESP_LOG_VERBOSE → Bigger chunks of debugging information, or frequent messages which can potentially flood the output.
          */
 
-
-
 // Obtencion de la identificación del nodo (string del macadress de la interfaz Wifi)
         uint8_t derived_mac_addr[6] = {0};
         ESP_ERROR_CHECK(esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA));
@@ -90,17 +88,15 @@ void app_main(void)
         ESP_LOGI(TAG, "Identificación: %s", id_nodo);
 
 // Primero que nada me conecto a la red
+        strcpy(datos_config.alias,"Default");
         inicializacion_tarjeta_SD();
         leer_config_SD ();
         connectToWiFi();
 
 
-
 // Inicialización de Variables /////////
         resetea_muestreo();
         cerrar_archivo();
-
-
 
 // Creo los semaforos que voy a usar////////////////////////////////////////////
         xSemaphore_tomamuestra = xSemaphoreCreateBinary();
@@ -156,7 +152,7 @@ void app_main(void)
         TaskHandle_t Handle_tarea_i2c = NULL;
         xTaskCreatePinnedToCore(leo_muestras, "leo_muestras", 1024 * 16, (void *)0, 10, &Handle_tarea_i2c,1);
         TaskHandle_t Handle_guarda_datos = NULL;
-        xTaskCreatePinnedToCore(guarda_datos, "guarda_datos", 1024 * 16, (void *)0, 9, &Handle_guarda_datos,0);
+        xTaskCreatePinnedToCore(guarda_datos, "guarda_datos", 1024 * 16, (void *)0, 9, &Handle_guarda_datos,1);
 
         TaskHandle_t Handle_tarea_timer_muestreo = NULL;
         xTaskCreatePinnedToCore(tarea_timer_muestreo, "tarea_timer_muestreo", 1024 * 16, (void *)0, 10, &Handle_tarea_timer_muestreo,1);

@@ -224,7 +224,7 @@ void IRAM_ATTR guarda_datos(void *arg)
 
                                                 if (Datos_muestreo.nro_tabla_guardada == 1) { // Inicio un archivo nuevo
 
-                                                        sprintf(archivo, MOUNT_POINT "/%d-%d.dat", Datos_muestreo.nro_muestreo, Datos_muestreo.nro_archivo );
+                                                        sprintf(archivo, MOUNT_POINT "/%s-%d.dat", Datos_muestreo.nombre_muestreo, Datos_muestreo.nro_archivo );
                                                         Datos_muestreo.nro_archivo++; // El proxímo archivo tendrá otro número
 
                                                         f_samples = fopen(archivo, "w"); // Abro un archivo nuevo

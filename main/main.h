@@ -53,6 +53,9 @@
 #include "tareas.h"
 
 
+#define LONG_NOMBRE_MUESTEO 20
+
+
 // Para la publicacion de mensajes por consola
 typedef struct mentaje_t {
         bool mensaje_nuevo;
@@ -68,6 +71,7 @@ typedef struct nodo_config_t {
   char ip_tictoc_server[16];
   char usuario_mqtt[64];
   char password_mqtt[64];
+  char alias[64];
   uint32_t puerto_mqtt;
 } nodo_config_t;
 
@@ -79,6 +83,7 @@ typedef struct nodo_config_t {
 #define ESTADO_MUESTREANDO                  4
 #define ESTADO_FINALIZANDO_MUESTREO         5
 #define ESTADO_MUESTREANDO_ASYNC            6
+
 
 
 typedef struct muestreo_t {
@@ -105,6 +110,7 @@ typedef struct muestreo_t {
         uint32_t cant_muestras_perdidas;  // Contador de muestras perdidas en una tabla.
         uint32_t cantidad_de_interrupciones_de_muestreo;
         uint32_t cantidad_de_muestras_leidas;
+        char nombre_muestreo[LONG_NOMBRE_MUESTEO];
 }muestreo_t;
 
 
