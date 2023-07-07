@@ -153,22 +153,9 @@ int getStamps(int sock, const struct sockaddr * servaddr, size_t servaddrSize, i
 	size_t outGoingSize = sizeof(int32_t) * 2 * 3;
 	size_t incomingSize = sizeof(int32_t) * 2 * 3;
 	int32_t timestamps[2 * 4];
-//	int64_t t1 = esp_timer_get_time();
-//	encodeEpochInMicros(t1, timestamps, 0);
+	int64_t t1 = esp_timer_get_time();
+	encodeEpochInMicros(t1, timestamps, 0);
 
-
-				size_t outGoingSize1 = sizeof(int32_t) * 2 * 3;
-				size_t incomingSize1 = sizeof(int32_t) * 2 * 3;
-				int32_t timestamps1[2 * 4];
-				int64_t t11 = esp_timer_get_time();
-				encodeEpochInMicros(t11, timestamps1, 0);
-				// Comunicación redundante, para preactivar el enlace
-				sendto(sock, (const int32_t *)timestamps1, outGoingSize1,  0, servaddr, servaddrSize);
-				recv(sock, (int32_t *)timestamps1, incomingSize1, MSG_WAITALL);
-
-
-int64_t t1 = esp_timer_get_time();
-encodeEpochInMicros(t1, timestamps, 0);
 	//sending t1
 	sendto(sock, (const int32_t *)timestamps, outGoingSize,  0, servaddr, servaddrSize);
 
