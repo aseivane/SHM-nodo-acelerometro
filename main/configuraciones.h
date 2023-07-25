@@ -16,22 +16,17 @@
 //#define IP_BROKER_MQTT "192.168.0.10"   //Direccion del Broker MQTT
 
 
-#define WIFI_SSID "xxxxxxx"        //SSID WIFI (Nombre de red)
-#define WIFI_PASS "xxxxxxx"        //Contraseña WIFI
+#define WIFI_SSID "SHM"        //SSID WIFI (Nombre de red)
+#define WIFI_PASS "vialidad"        //Contraseña WIFI
 
-#define TICTOC_SERVER "192.168.0.50"   // Ip del servidor de sincronismo
+#define TICTOC_SERVER "192.168.100.1"   // Ip del servidor de sincronismo
 
 // Configuracion del MQTT
-#define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
+#define IP_BROKER_MQTT "192.168.100.1"   //Direccion del Broker MQTT
 #define PUERTO_MQTT 1883                //puerto del MQTT
-#define USUARIO_MQTT "usr"          //Usuario del MQTT
-#define PASSWD_MQTT  "usr"  //Contraseña del MQTT
+#define USUARIO_MQTT "usuario"          //Usuario del MQTT
+#define PASSWD_MQTT  "usuariopassword"  //Contraseña del MQTT
 
-
-// #define IP_BROKER_MQTT "192.168.0.100"   //Direccion del Broker MQTT
-// #define PUERTO_MQTT 1883                //puerto del MQTT
-// #define USUARIO_MQTT "usuario"          //Usuario del MQTT
-// #define PASSWD_MQTT  "usuariopassword"  //Contraseña del MQTT
 
 
 #define ARCHIVOS_CON_ENCABEZADO
@@ -52,8 +47,8 @@
 
 
 // Amount of algorithm cycles between estimation parameters computation.
-#define P 60 // Sincronización estándar 30 minutos aprox
-//#define P 2  //2 minutos para la primera sincronización, la sincronización no sirve (para pruebas nomás)
+//#define P 30 // Sincronización estándar 30 minutos aprox
+#define P 30  //2 minutos para la primera sincronización, la sincronización no sirve (para pruebas nomás)
 
 
 #endif /* CONFIGURACIONES_H_ */
