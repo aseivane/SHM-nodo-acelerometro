@@ -303,12 +303,12 @@ void mensaje_mqtt_error(char * mensaje_error) {
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/error", mensaje, 0, 1, 0, 1);
         ESP_LOGI(TAG, "Mensaje de error publicado, msg_id=%d", msg_id);
 }
-
+//TODO: ver tamaño de variable mensaje
 void mensaje_confirmacion(uint32_t nro) {
         int msg_id;
-        char mensaje[100];
+        char mensaje[170];
 
-        sprintf(mensaje, "%s %s %u", id_nodo, dir_ip, nro);
+        sprintf(mensaje, "%s %s %u %s", id_nodo, dir_ip, nro, datos_config.alias);
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/confirmacion", mensaje, 0, 1, 0, 1);
 
         ESP_LOGI(TAG, "Mensaje de confirmación de inicio publicado, msg_id=%d", msg_id);
@@ -316,9 +316,9 @@ void mensaje_confirmacion(uint32_t nro) {
 
 void mensaje_fin_muestreo(uint32_t nro) {
         int msg_id;
-        char mensaje[100];
+        char mensaje[170];
 
-        sprintf(mensaje, "%s %s %u", id_nodo, dir_ip, nro);
+        sprintf(mensaje, "%s %s %u %s", id_nodo, dir_ip, nro, datos_config.alias);
         msg_id = esp_mqtt_client_enqueue(get_mqtt_client_handle(), "nodo/fin", mensaje, 0, 1, 0, 1);
 
         ESP_LOGI(TAG, "Mensaje fin de muestreo publicado, msg_id=%d", msg_id);
