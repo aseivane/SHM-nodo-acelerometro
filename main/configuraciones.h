@@ -26,7 +26,6 @@
 #define PUERTO_MQTT 1883                //puerto del MQTT
 #define USUARIO_MQTT "usuario"          //Usuario del MQTT
 #define PASSWD_MQTT  "usuariopassword"  //Contraseña del MQTT
-#define ALIAS "Default"
 
 
 

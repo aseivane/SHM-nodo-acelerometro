@@ -40,16 +40,7 @@ mensaje_t mensaje_consola;
 muestreo_t Datos_muestreo;
 TicTocData * ticTocData;
 
-nodo_config_t datos_config = {
-  .wifi_ssid = WIFI_SSID,
-  .wifi_password = WIFI_PASS,
-  .mqtt_ip_broker = IP_BROKER_MQTT,
-  .ip_tictoc_server = TICTOC_SERVER,
-  .usuario_mqtt = USUARIO_MQTT,
-  .password_mqtt = PASSWD_MQTT,
-  .alias = ALIAS,
-  .puerto_mqtt = PUERTO_MQTT
-};
+nodo_config_t datos_config;
 
 static const char *TAG = "MAIN "; // Para los mensajes del micro
 char id_nodo[20];
@@ -97,6 +88,7 @@ void app_main(void)
         ESP_LOGI(TAG, "Identificación: %s", id_nodo);
 
 // Primero que nada me conecto a la red
+        strcpy(datos_config.alias,"Default");
         inicializacion_tarjeta_SD();
         leer_config_SD ();
         connectToWiFi();
